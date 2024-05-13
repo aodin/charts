@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <body>
+    <h1>Line Chart Example</h1>
+    <div id="chart"></div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="line.min.js"></script>
+    <script type="text/javascript">
+const data = {
+  z: [
+    {"name": "A", "color": "#ff0000"},
+    {"name": "B", "color": "#00ff00"},
+    {"name": "C", "color": "#0000ff"},
+  ],
+  values: [
+    ["2020-01-01", 100, "A"],
+    ["2020-02-01", 110, "A"],
+    ["2020-03-01", 120, "A"],
+    ["2020-04-01", 125, "A"],
+    ["2020-05-01", 115, "A"],
+    ["2020-06-01", 110, "A"],
+    ["2020-01-01", 20, "B"],
+    ["2020-02-01", 50, "B"],
+    ["2020-03-01", 100, "B"],
+    ["2020-04-01", 140, "B"],
+    ["2020-05-01", 120, "B"],
+    ["2020-06-01", 50, "B"],
+    ["2020-01-01", 0, "C"],
+    ["2020-04-01", 10, "C"],
+    ["2020-05-01", 10, "C"],
+    ["2020-06-01", 12, "C"],
+  ],
+}
+const line = new charts.Line(data);
+line.render("#chart");
+// TODO Should be able to clear and re-draw in some spot
+// line.clear();
+// line.render("#chart");
+    </script>
+  </body>
+</html>
