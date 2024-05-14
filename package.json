@@ -8,7 +8,7 @@
   },
   "scripts": {
     "fmt": "prettier *.js --write",
-    "example:line": "esbuild line.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=examples --global-name=charts --target=es2018",
+    "examples": "esbuild area.js line.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=examples --global-name=charts --target=es2018",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
