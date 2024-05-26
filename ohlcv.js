@@ -1,0 +1,235 @@
+/*
+OHLCV chart
+*/
+import { getBounds } from "./bounds";
+import { Chart } from "./chart";
+import { makeDateFormatter } from "./timeseries";
+
+const ANIMATION_DURATION_MS = 500;
+const X_TICK_SIZE = 4;
+const X_TICK_GUTTER = 3;
+const Y_TICK_SIZE = 0;
+const Y_TICK_GUTTER = 5;  // Space between tick label and grid
+const BAND_PADDING = 0.2;  // As a percentage of the band
+
+const COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]
+
+export function volumeFormatter(value) {
+  if (value <= 0) {
+    return ''; // Do not show a tick for zero volume
+  }
+  if (value >= 1e9) {
+    return `${value / 1e9}B`;
+  }
+  return `${value / 1e6}M`;
+}
+
+export class OHLCV extends Chart {
+  parse(data) {
+    this.X = d3.map(data, (d) => d3.isoParse(d[0]));
+    this.Yo = d3.map(data, (d) => d[1]);
+    this.Yh = d3.map(data, (d) => d[2]);
+    this.Yl = d3.map(data, (d) => d[3]);
+    this.Yc = d3.map(data, (d) => d[4]);
+    this.Yv = d3.map(data, (d) => d[5]);
+    this.I = d3.range(this.X.length);
+  }
+
+  getDomainX() {
+    return d3.extent(this.X);
+  }
+
+  getDomainY() {
+    // TODO How to pad?
+    // TODO How to set multiple domains? Data object
+    this.minPrice = d3.min(this.Yl); // Sets the initial animation y-coord
+    const maxPrice = d3.max(this.Yh);
+    this.yDomain = [
+      this.minPrice,
+      maxPrice + (maxPrice - this.minPrice) * 0.05,
+    ];
+    this.yDomainVolume = [0, d3.max(this.Yv)];
+    return this.yDomain;
+  }
+
+  getColor(index) {
+    return COLORS[1 + Math.sign(this.Yo[index] - this.Yc[index])];
+  }
+
+  render(elem) {
+    // Determine the size of the DOM element
+    const [width, height] = getBounds(elem, { ratio: 0.35 });
+    const dimensions = { width, height };
+
+    // TODO How to adjust margin based on labels?
+    const margin = {
+      top: 15,
+      right: 25,
+      bottom: 25,
+      left: 40,
+    };
+
+    // TODO How to generalize different chart sections? sub-axes?
+    const chartHeight = height - margin.top - margin.bottom;
+    this.chartHeight = chartHeight;
+    const pricePortion = 0.9;
+    const priceHeight = chartHeight * pricePortion;
+
+    const yRange = [margin.top + priceHeight, margin.top];
+    const yRangeVolume = [margin.top + chartHeight, margin.top + priceHeight];
+
+    const yFormat = ",f";
+    const yLabel = "";
+
+    // NOTE: If dates are missing, we can't use the timeWeek ranges without
+    // checking if the tick has values
+    // TODO Number of x-ticks, number of y-ticks - function of width?
+    let interval = parseInt(this.X.length / 10);
+    if (interval < 1) {
+      interval = 1;
+    }
+
+    let xTicks = d3.filter(this.X, (d, i) => i % interval === 0);
+
+    // Construct scales and axes
+    // NOTE: scaleBand takes all 'categorical' x-axis items - not just extent
+    // TODO Play further with padding and align
+    const xScale = d3.scaleBand(this.X, this.getRangeX(dimensions, margin)).padding(BAND_PADDING).align(0.1);
+    this.xScale = xScale;
+    const yScale = d3.scaleLinear(this.getDomainY(), yRange);
+    const yScaleVolume = d3.scaleLinear(this.yDomainVolume, yRangeVolume);
+    
+    // NOTE The date formatter needs to be created because it uses a
+    // closure to determine a new year
+    // TODO A method to provide custom formatting
+    const dateFormatter = makeDateFormatter();
+    const xAxis = d3
+    .axisBottom(xScale)
+    .tickFormat(dateFormatter)
+    .tickValues(xTicks)
+    .tickSize(X_TICK_SIZE);
+    
+    // The band width will be used for correctly positioning the tooltip
+    this.bandWidth = xScale.step();
+
+    // TODO Set number of ticks
+    const yAxis = d3
+      .axisLeft(yScale)
+      .ticks(priceHeight / 40, yFormat)
+      .tickSize(Y_TICK_SIZE);
+
+    const yAxisVolume = d3
+      .axisRight(yScaleVolume)
+      .ticks(2) // Never show more than 1 non-zero tick for the volume
+      .tickFormat(volumeFormatter)
+      .tickSize(3);
+
+    // Create SVG
+    this.createSVG(elem, dimensions);
+
+    const bandPadding = (this.bandWidth * BAND_PADDING) / 2;
+    this.svg
+      .append("g")
+      .attr("transform", `translate(${bandPadding},${height - margin.bottom + X_TICK_GUTTER})`)
+      .call(xAxis)
+      .call((g) => g.select(".domain").remove());
+
+    // Price y-axis
+    this.svg
+      .append("g")
+      .attr("transform", `translate(${margin.left - Y_TICK_GUTTER},0)`)
+      .call(yAxis)
+      .call((g) => g.select(".domain").remove())
+      .call((g) =>
+        g
+          .selectAll(".tick line")
+          .clone()
+          .attr("stroke", "#bbb")  // Works for black or white background at 50% opacity
+          .attr("stroke-opacity", 0.5)
+          .attr("x1", Y_TICK_GUTTER)
+          .attr("x2", width + Y_TICK_GUTTER - margin.left - margin.right),
+      )
+      .call((g) =>
+        g
+          .append("text")
+          .attr("x", -margin.left)
+          .attr("y", 10)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "start")
+          .text(yLabel),
+      );
+
+    // Volume y-axis
+    this.svg
+      .append("g")
+      .attr("transform", `translate(${width - margin.right},0)`)
+      .call(yAxisVolume)
+      .call((g) => g.select(".domain").remove())
+      .call((g) =>
+        g
+          .append("text")
+          .attr("x", -margin.left)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "start")
+          .text(yLabel),
+      );
+
+    // Plot OHLC candle sticks
+    const g = this.svg
+      .append("g")
+      .attr("stroke", "currentColor")
+      .attr("stroke-linecap", "butt") // NOTE: using 'square' distorts size
+      .selectAll("g")
+      .data(this.I)
+      .join("g")
+      .attr(
+        "transform",
+        (i) => `translate(${xScale(this.X[i]) + (this.bandWidth / 2.0)},0)`,
+      );
+
+    g.append("line")
+      .attr("stroke", "currentColor")
+      .attr("stroke-width", 1)
+      .attr("opacity", 0.8)
+      .attr("y1", yScale(this.minPrice))
+      .attr("y2", yScale(this.minPrice))
+      .transition()
+      .duration(ANIMATION_DURATION_MS)
+      .attr("y1", (i) => yScale(this.Yl[i]))
+      .attr("y2", (i) => yScale(this.Yh[i]));
+
+    g.append("line")
+      .attr("stroke-width", xScale.bandwidth())
+      .attr("stroke", (i) => this.getColor(i))
+      .attr("y1", yScale(this.minPrice))
+      .attr("y2", yScale(this.minPrice))
+      .transition()
+      .duration(ANIMATION_DURATION_MS)
+      .attr("y1", (i) => yScale(this.Yo[i]))
+      .attr("y2", (i) => yScale(this.Yc[i]));
+
+    // Plot volume
+    const vol = this.svg
+      .append("g")
+      .attr("stroke", "currentColor")
+      .attr("stroke-linecap", "butt") // NOTE: using 'square' distorts length
+      .selectAll("g")
+      .data(this.I)
+      .join("g")
+      .attr(
+        "transform",
+        (i) => `translate(${xScale(this.X[i]) + (this.bandWidth / 2.0)},0)`,
+      );
+
+    vol
+      .append("line")
+      .attr("y1", yScaleVolume(0))
+      .attr("y2", yScaleVolume(0))
+      .attr("stroke-width", xScale.bandwidth())
+      .attr("stroke", (i) => this.getColor(i))
+      .style("opacity", 0.5)
+      .transition()
+      .duration(ANIMATION_DURATION_MS)
+      .attr("y2", (i) => yScaleVolume(this.Yv[i]));
+  }
+}

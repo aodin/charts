@@ -39,6 +39,6 @@ Components:
 
 See [examples](/examples) for more.
 
-aodin, 2024
-
 Happy hacking!
+
+aodin, 2024

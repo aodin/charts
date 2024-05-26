@@ -140,7 +140,7 @@ export class Area extends Chart {
       .join("path")
       .attr("fill", (d) => this.getColor(d.key))
       .attr("d", area)
-      .append("title")  // TODO Option for title
+      .append("title") // TODO Option for title
       .text((d) => d.key);
   }
 }
