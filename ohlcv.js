@@ -4,19 +4,21 @@ OHLCV chart
 import { getBounds } from "./bounds";
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
+import { throttle } from "./throttle";
 
 const ANIMATION_DURATION_MS = 500;
 const X_TICK_SIZE = 4;
 const X_TICK_GUTTER = 3;
 const Y_TICK_SIZE = 0;
-const Y_TICK_GUTTER = 5;  // Space between tick label and grid
-const BAND_PADDING = 0.2;  // As a percentage of the band
+const Y_TICK_GUTTER = 5; // Space between tick label and grid
+const BAND_PADDING = 0.2; // As a percentage of the band
+const VOLUME_OPACITY = 0.6;
 
 const COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]
 
 export function volumeFormatter(value) {
   if (value <= 0) {
-    return ''; // Do not show a tick for zero volume
+    return ""; // Do not show a tick for zero volume
   }
   if (value >= 1e9) {
     return `${value / 1e9}B`;
@@ -81,7 +83,7 @@ export class OHLCV extends Chart {
     const yFormat = ",f";
     const yLabel = "";
 
-    // NOTE: If dates are missing, we can't use the timeWeek ranges without
+    // NOTE If dates are missing, we can't use the timeWeek ranges without
     // checking if the tick has values
     // TODO Number of x-ticks, number of y-ticks - function of width?
     let interval = parseInt(this.X.length / 10);
@@ -92,25 +94,27 @@ export class OHLCV extends Chart {
     let xTicks = d3.filter(this.X, (d, i) => i % interval === 0);
 
     // Construct scales and axes
-    // NOTE: scaleBand takes all 'categorical' x-axis items - not just extent
+    // NOTE scaleBand takes all 'categorical' x-axis items - not just extent
     // TODO Play further with padding and align
-    const xScale = d3.scaleBand(this.X, this.getRangeX(dimensions, margin)).padding(BAND_PADDING).align(0.1);
-    this.xScale = xScale;
+    this.xScale = d3
+      .scaleBand(this.X, this.getRangeX(dimensions, margin))
+      .padding(BAND_PADDING)
+      .align(0.1);
     const yScale = d3.scaleLinear(this.getDomainY(), yRange);
     const yScaleVolume = d3.scaleLinear(this.yDomainVolume, yRangeVolume);
-    
+
     // NOTE The date formatter needs to be created because it uses a
     // closure to determine a new year
     // TODO A method to provide custom formatting
     const dateFormatter = makeDateFormatter();
     const xAxis = d3
-    .axisBottom(xScale)
-    .tickFormat(dateFormatter)
-    .tickValues(xTicks)
-    .tickSize(X_TICK_SIZE);
-    
+      .axisBottom(this.xScale)
+      .tickFormat(dateFormatter)
+      .tickValues(xTicks)
+      .tickSize(X_TICK_SIZE);
+
     // The band width will be used for correctly positioning the tooltip
-    this.bandWidth = xScale.step();
+    this.bandWidth = this.xScale.step();
 
     // TODO Set number of ticks
     const yAxis = d3
@@ -130,7 +134,10 @@ export class OHLCV extends Chart {
     const bandPadding = (this.bandWidth * BAND_PADDING) / 2;
     this.svg
       .append("g")
-      .attr("transform", `translate(${bandPadding},${height - margin.bottom + X_TICK_GUTTER})`)
+      .attr(
+        "transform",
+        `translate(${bandPadding},${height - margin.bottom + X_TICK_GUTTER})`,
+      )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
 
@@ -144,7 +151,7 @@ export class OHLCV extends Chart {
         g
           .selectAll(".tick line")
           .clone()
-          .attr("stroke", "#bbb")  // Works for black or white background at 50% opacity
+          .attr("stroke", "#bbb") // Works for black or white background at 50% opacity
           .attr("stroke-opacity", 0.5)
           .attr("x1", Y_TICK_GUTTER)
           .attr("x2", width + Y_TICK_GUTTER - margin.left - margin.right),
@@ -178,13 +185,13 @@ export class OHLCV extends Chart {
     const g = this.svg
       .append("g")
       .attr("stroke", "currentColor")
-      .attr("stroke-linecap", "butt") // NOTE: using 'square' distorts size
+      .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
       .selectAll("g")
       .data(this.I)
       .join("g")
       .attr(
         "transform",
-        (i) => `translate(${xScale(this.X[i]) + (this.bandWidth / 2.0)},0)`,
+        (i) => `translate(${this.xScale(this.X[i]) + this.bandWidth / 2.0},0)`,
       );
 
     g.append("line")
@@ -199,7 +206,7 @@ export class OHLCV extends Chart {
       .attr("y2", (i) => yScale(this.Yh[i]));
 
     g.append("line")
-      .attr("stroke-width", xScale.bandwidth())
+      .attr("stroke-width", this.xScale.bandwidth())
       .attr("stroke", (i) => this.getColor(i))
       .attr("y1", yScale(this.minPrice))
       .attr("y2", yScale(this.minPrice))
@@ -212,24 +219,79 @@ export class OHLCV extends Chart {
     const vol = this.svg
       .append("g")
       .attr("stroke", "currentColor")
-      .attr("stroke-linecap", "butt") // NOTE: using 'square' distorts length
+      .attr("stroke-linecap", "butt") // NOTE using 'square' distorts length
       .selectAll("g")
       .data(this.I)
       .join("g")
       .attr(
         "transform",
-        (i) => `translate(${xScale(this.X[i]) + (this.bandWidth / 2.0)},0)`,
+        (i) => `translate(${this.xScale(this.X[i]) + this.bandWidth / 2.0},0)`,
       );
 
     vol
       .append("line")
       .attr("y1", yScaleVolume(0))
       .attr("y2", yScaleVolume(0))
-      .attr("stroke-width", xScale.bandwidth())
+      .attr("stroke-width", this.xScale.bandwidth())
       .attr("stroke", (i) => this.getColor(i))
-      .style("opacity", 0.5)
+      .style("opacity", VOLUME_OPACITY)
       .transition()
       .duration(ANIMATION_DURATION_MS)
       .attr("y2", (i) => yScaleVolume(this.Yv[i]));
+  }
+
+  enableHover(move, leave) {
+    // Enable hover events for the chart. On move, determine which band is being
+    // hovered over and send an object of its OHLCV data to the move callback.
+    // The leave callback is triggered when the pointer leaves the SVG elem
+    // Calculate the Voronoi of a single line of x-coordinates
+    const points = d3.map(this.X, (d) => [
+      this.xScale(d) + this.bandWidth / 2,
+      1,
+    ]);
+    const delaunay = d3.Delaunay.from(points);
+
+    let prevIndex = null;
+
+    const pointermove = (evt) => {
+      const [xm] = d3.pointer(evt);
+      const index = delaunay.find(xm, 1);
+
+      // Only trigger the callback when the index changes
+      if (prevIndex && prevIndex == index) {
+        return;
+      }
+
+      prevIndex = index;
+
+      // Include the index's OHLCV data and a change from the last close
+      let data = {
+        x: this.X[index],
+        o: this.Yo[index],
+        h: this.Yh[index],
+        l: this.Yl[index],
+        c: this.Yc[index],
+        v: this.Yv[index],
+      };
+
+      if (index > 0) {
+        data.prev = this.Yc[index - 1];
+        if (data.prev) {
+          data.delta = data.c - data.prev;
+          data.percent = data.delta / data.prev;
+        }
+      }
+
+      // Always enable highlight?
+      if (move) {
+        move.call(this, data);
+      }
+    };
+
+    this.svg.on("pointermove", throttle(pointermove, 20)); // ~48fps
+
+    if (leave) {
+      this.svg.on("pointerleave", leave);
+    }
   }
 }
