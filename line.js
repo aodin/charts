@@ -28,6 +28,11 @@ to be overridden by settings
 */
 import { getBounds } from "./bounds";
 import { Chart } from "./chart";
+import { throttle } from "./throttle";
+
+function isObject(v) {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
 
 export class Line extends Chart {
   render(elem) {
@@ -51,13 +56,13 @@ export class Line extends Chart {
     // .on("touchstart", (event) => event.preventDefault());
 
     // X-axis
-    const xScale = d3
+    this.xScale = d3
       .scaleUtc()
       .domain(this.getDomainX())
       .range(this.getRangeX(dimensions, margin));
 
     let xAxis = d3
-      .axisBottom(xScale)
+      .axisBottom(this.xScale)
       // .tickValues(q1s)
       .tickSizeInner(4); // TODO setting for inner tick size
     // .tickFormat(Q);  // TODO setting for tick format
@@ -65,6 +70,7 @@ export class Line extends Chart {
     // TODO Setting for tick padding?
     this.svg
       .append("g")
+      .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
         `translate(0,${dimensions.height - margin.bottom + 2})`,
@@ -73,13 +79,13 @@ export class Line extends Chart {
       .call((g) => g.select(".domain").remove());
 
     // Y-axis
-    const yScale = d3
+    this.yScale = d3
       .scaleLinear()
       .domain(this.getDomainY())
       .range(this.getRangeY(dimensions, margin));
 
     let yAxis = d3
-      .axisLeft(yScale)
+      .axisLeft(this.yScale)
       // .tickFormat(percentAxisFormat)
       .tickSize(0)
       .ticks(8); // TODO Number of ticks
@@ -87,7 +93,8 @@ export class Line extends Chart {
     // Grid lines
     this.svg
       .append("g")
-      // TODO grid gutter
+      // TODO grid gutter setting
+      .style("font-size", this.options.FONT_SIZE)
       .attr("transform", `translate(${margin.left - 10},0)`)
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
@@ -95,19 +102,20 @@ export class Line extends Chart {
         g
           .selectAll(".tick line")
           .clone()
-          .attr("x2", dimensions.width - margin.left - margin.right)
-          .attr("stroke-opacity", 0.1),
+          .attr("stroke", "#888") // Works for black or white background at 40% opacity
+          .attr("stroke-opacity", 0.4)
+          .attr("x2", dimensions.width - margin.left - margin.right),
       );
 
     // line
     const line = d3
       .line()
       .defined((i) => this.D[i])
-      .x((i) => xScale(this.X[i]))
-      .y((i) => yScale(this.Y[i]));
+      .x((i) => this.xScale(this.X[i]))
+      .y((i) => this.yScale(this.Y[i]));
 
     // Plot the line
-    const path = this.svg
+    this.path = this.svg
       .append("g")
       .attr("fill", "none")
       .attr("stroke-width", 1.5) // TODO Setting for default with
@@ -116,6 +124,10 @@ export class Line extends Chart {
       .join("path")
       .attr("d", ([, I]) => line(I))
       .attr("stroke", ([d]) => this.getColor(d));
+
+      // Dot - shows nearest point during pointer events
+      this.dot = this.svg.append("g").style("display", "none");
+      this.circle = this.dot.append("circle").attr("r", this.options.DOT_RADIUS);
   }
 
   clear() {
@@ -123,13 +135,94 @@ export class Line extends Chart {
     this.svg.selectAll("*").remove();
   }
 
-  // TODO Where to define pointer/touch callbacks?
-  // TODO Where to have legend set?
-}
+  getLegend() {
+    // Return the z items along with their colors
+    return d3.map(this.z, d => {
+      if (isObject(d)) {
+        return Object.assign({color: this.getColor(d.name)}, d); 
+      }
+      return {name: d, color: this.getColor(d)};
+    });
+  }
 
-// All settings
-// * bounds ratio, default 0.35
-// * max height, max width
+  hide(z) {
+
+  }
+
+  placeDot(i) {
+    // Place a dot at the given value
+    const x = this.xScale(this.X[i]);
+    const y = this.yScale(this.Y[i]);
+    const z = this.Z[i];
+    this.dot.style("display", null).attr("transform", `translate(${x},${y})`);
+    this.circle.attr("fill", this.getColor(z));
+  }
+
+  hideDot() {
+    this.dot.style("display", "none");
+  }
+  
+  noHighlight() {
+    this.path.attr("opacity", 1.0).attr("stroke-width", this.options.STROKE_WIDTH);
+  }
+
+  highlight(z) {
+    // Hide paths that aren't the currently selected path
+    this.path.attr("opacity", ([elem]) => (elem === z ? 1.0 : this.options.UNHIGHLIGHTED_OPACITY));
+    this.path.attr("stroke-width", ([elem]) => (elem === z ? this.options.HIGHLIGHT_STROKE_WIDTH : this.options.STROKE_WIDTH));
+  }
+
+  enableHover(move, leave) {
+    let prevIndex = null;
+
+    // Determine the closest point to the cursor
+    const pointermove = (evt) => {
+      const [xm, ym] = d3.pointer(evt);
+      const index = d3.least(this.I, (i) =>
+        Math.hypot(this.xScale(this.X[i]) - xm, this.yScale(this.Y[i]) - ym)
+      );
+
+      // Do not place a tooltip if no point was found
+      if (typeof index === "undefined") return;
+
+      // Only trigger the callback when the index changes
+      if (prevIndex && prevIndex == index) {
+        return;
+      }
+
+      this.placeDot(index);
+
+      const x = this.X[index];
+      const y = this.Y[index]
+
+      let data = {
+        x: x,
+        y: y,
+        z: this.Z[index],
+        dx: this.xScale(x),
+        dy: this.yScale(y),
+      };
+
+      if (move) {
+        move.call(this, data);
+      }
+    }
+
+    const pointerleave = (evt) => {
+      this.hideDot();
+      if (leave) {
+        leave.call(this);
+      }
+    }
+
+    this.svg
+      .on("pointermove", throttle(pointermove, 20)) // ~48fps
+      .on("pointerleave", pointerleave)
+  }
+
+  // TODO pre-calculate?
+  // const delaunay = d3.Delaunay.from(points);
+}
 
 /*
 Animation
@@ -139,36 +232,7 @@ path
   .attr("stroke-dashoffset", (d, i) => lengths[i])
   .attr("stroke", ([d], i) => this.colors[i])
   .transition()
-  .duration(ANIMATION_DURATION_MS)
+  .duration(this.options.ANIMATION_DURATION_MS)
   .attr("stroke-dashoffset", 0);
 
-*/
-
-/*
-Tooltip
-
-// Set text, then set coordinates
-if (i > 0) {
-  tooltip.html(
-    `<strong>${item.name}</strong></br><em>${Q(
-      date
-    )}</em></br>${percentFormat(value)}`
-  );
-} else {
-  tooltip.html(`<strong>${item.name}</strong></br><em>${Q(date)}</em>`);
-}
-*/
-
-/*
-Legend
-
-// Create a legend with a item for each category built via template
-const legend = document.querySelector(elem);
-const template = document.querySelector("#legend-item");
-
-this.categories.forEach((label) => {
-  const clone = template.content.cloneNode(true);
-  clone.querySelector("rect").setAttribute("fill", this.colorScale(label));
-  clone.querySelector("span").textContent = label;
-  legend.appendChild(clone);
 */

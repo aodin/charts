@@ -6,16 +6,6 @@ import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
 
-const ANIMATION_DURATION_MS = 500;
-const X_TICK_SIZE = 4;
-const X_TICK_GUTTER = 3;
-const Y_TICK_SIZE = 0;
-const Y_TICK_GUTTER = 5; // Space between tick label and grid
-const BAND_PADDING = 0.2; // As a percentage of the band
-const VOLUME_OPACITY = 0.6;
-
-const COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]
-
 export function volumeFormatter(value) {
   if (value <= 0) {
     return ""; // Do not show a tick for zero volume
@@ -55,7 +45,9 @@ export class OHLCV extends Chart {
   }
 
   getColor(index) {
-    return COLORS[1 + Math.sign(this.Yo[index] - this.Yc[index])];
+    return this.options.OHLC_COLORS[
+      1 + Math.sign(this.Yo[index] - this.Yc[index])
+    ];
   }
 
   render(elem) {
@@ -98,7 +90,7 @@ export class OHLCV extends Chart {
     // TODO Play further with padding and align
     this.xScale = d3
       .scaleBand(this.X, this.getRangeX(dimensions, margin))
-      .padding(BAND_PADDING)
+      .padding(this.options.BAND_PADDING)
       .align(0.1);
     const yScale = d3.scaleLinear(this.getDomainY(), yRange);
     const yScaleVolume = d3.scaleLinear(this.yDomainVolume, yRangeVolume);
@@ -111,7 +103,7 @@ export class OHLCV extends Chart {
       .axisBottom(this.xScale)
       .tickFormat(dateFormatter)
       .tickValues(xTicks)
-      .tickSize(X_TICK_SIZE);
+      .tickSize(this.options.X_TICK_SIZE);
 
     // The band width will be used for correctly positioning the tooltip
     this.bandWidth = this.xScale.step();
@@ -120,7 +112,7 @@ export class OHLCV extends Chart {
     const yAxis = d3
       .axisLeft(yScale)
       .ticks(priceHeight / 40, yFormat)
-      .tickSize(Y_TICK_SIZE);
+      .tickSize(this.options.Y_TICK_SIZE);
 
     const yAxisVolume = d3
       .axisRight(yScaleVolume)
@@ -131,12 +123,15 @@ export class OHLCV extends Chart {
     // Create SVG
     this.createSVG(elem, dimensions);
 
-    const bandPadding = (this.bandWidth * BAND_PADDING) / 2;
+    const bandPadding = (this.bandWidth * this.options.BAND_PADDING) / 2;
+
+    // X-axis
     this.svg
       .append("g")
+      .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${bandPadding},${height - margin.bottom + X_TICK_GUTTER})`,
+        `translate(${bandPadding},${height - margin.bottom + this.options.X_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
@@ -144,7 +139,11 @@ export class OHLCV extends Chart {
     // Price y-axis
     this.svg
       .append("g")
-      .attr("transform", `translate(${margin.left - Y_TICK_GUTTER},0)`)
+      .style("font-size", this.options.FONT_SIZE)
+      .attr(
+        "transform",
+        `translate(${margin.left - this.options.Y_TICK_GUTTER},0)`,
+      )
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
       .call((g) =>
@@ -153,8 +152,11 @@ export class OHLCV extends Chart {
           .clone()
           .attr("stroke", "#bbb") // Works for black or white background at 50% opacity
           .attr("stroke-opacity", 0.5)
-          .attr("x1", Y_TICK_GUTTER)
-          .attr("x2", width + Y_TICK_GUTTER - margin.left - margin.right),
+          .attr("x1", this.options.Y_TICK_GUTTER)
+          .attr(
+            "x2",
+            width + this.options.Y_TICK_GUTTER - margin.left - margin.right,
+          ),
       )
       .call((g) =>
         g
@@ -169,6 +171,7 @@ export class OHLCV extends Chart {
     // Volume y-axis
     this.svg
       .append("g")
+      .style("font-size", this.options.FONT_SIZE)
       .attr("transform", `translate(${width - margin.right},0)`)
       .call(yAxisVolume)
       .call((g) => g.select(".domain").remove())
@@ -201,7 +204,7 @@ export class OHLCV extends Chart {
       .attr("y1", yScale(this.minPrice))
       .attr("y2", yScale(this.minPrice))
       .transition()
-      .duration(ANIMATION_DURATION_MS)
+      .duration(this.options.ANIMATION_DURATION_MS)
       .attr("y1", (i) => yScale(this.Yl[i]))
       .attr("y2", (i) => yScale(this.Yh[i]));
 
@@ -211,7 +214,7 @@ export class OHLCV extends Chart {
       .attr("y1", yScale(this.minPrice))
       .attr("y2", yScale(this.minPrice))
       .transition()
-      .duration(ANIMATION_DURATION_MS)
+      .duration(this.options.ANIMATION_DURATION_MS)
       .attr("y1", (i) => yScale(this.Yo[i]))
       .attr("y2", (i) => yScale(this.Yc[i]));
 
@@ -234,9 +237,9 @@ export class OHLCV extends Chart {
       .attr("y2", yScaleVolume(0))
       .attr("stroke-width", this.xScale.bandwidth())
       .attr("stroke", (i) => this.getColor(i))
-      .style("opacity", VOLUME_OPACITY)
+      .style("opacity", this.options.VOLUME_OPACITY)
       .transition()
-      .duration(ANIMATION_DURATION_MS)
+      .duration(this.options.ANIMATION_DURATION_MS)
       .attr("y2", (i) => yScaleVolume(this.Yv[i]));
   }
 
@@ -282,7 +285,7 @@ export class OHLCV extends Chart {
         }
       }
 
-      // Always enable highlight?
+      // TODO Always enable highlight?
       if (move) {
         move.call(this, data);
       }

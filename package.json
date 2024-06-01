@@ -9,6 +9,7 @@
   "scripts": {
     "fmt": "prettier *.js --write",
     "examples": "esbuild area.js line.js ohlcv.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=examples --global-name=charts --target=es2018",
+    "rates": "esbuild examples/exchange_rates.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=examples --global-name=rates --target=es2018",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

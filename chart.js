@@ -1,19 +1,27 @@
+import { Options } from "./options";
+
 export class Chart {
-  constructor(data, settings = {}) {
+  constructor(data, options = {}) {
+    // TODO Or should Options also be a parent class of Chart?
+    this.options = new Options(options);
+    this.parse(data);
+  }
+
+  parse(data) {
     // Parse data object, determine:
     // * x, y, z values as desired types
     // * items lookup by any property
     // * color mapping (discrete / scale)
     // Is defined lookup
     // grouping? for tooltips?
-    this.parse(data);
-  }
 
-  parse(data) {
     // TODO This data parse is specific to line series data
     this.X = this.parseX(data);
     this.Y = this.parseY(data);
     this.Z = this.parseZ(data);
+
+    // TODO Get distinct z items from the list of Z values or the data if defined
+    this.z = data.z;
 
     // Defined?
     // TODO This doesn't work for missing values
@@ -85,7 +93,7 @@ export class Chart {
       .attr("viewBox", [0, 0, dimensions.width, dimensions.height])
       .attr("style", "max-width: 100%; height: intrinsic;")
       .style("-webkit-tap-highlight-color", "transparent")
-      .style("font-size", "13px") // TODO Set font size
+      .style("font-size", this.options.FONT_SIZE)
       .style("overflow", "visible");
   }
 }

@@ -68,7 +68,7 @@ function onMove(data) {
 
 function onLeave() {}
 
-const ohlcv = new charts.OHLCV(data);
+const ohlcv = new charts.OHLCV(data, {FONT_SIZE: "12px"});
 ohlcv.render("#chart");
 ohlcv.enableHover(onMove, onLeave);
     </script>
