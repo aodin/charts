@@ -31,7 +31,7 @@ import { Chart } from "./chart";
 import { throttle } from "./throttle";
 
 function isObject(v) {
-  return v !== null && typeof v === 'object' && !Array.isArray(v);
+  return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
 export class Line extends Chart {
@@ -120,9 +120,9 @@ export class Line extends Chart {
       .attr("d", ([, I]) => line(I))
       .attr("stroke", ([d]) => this.getColor(d));
 
-      // Dot - shows nearest point during pointer events
-      this.dot = this.svg.append("g").style("display", "none");
-      this.circle = this.dot.append("circle").attr("r", this.options.DOT_RADIUS);
+    // Dot - shows nearest point during pointer events
+    this.dot = this.svg.append("g").style("display", "none");
+    this.circle = this.dot.append("circle").attr("r", this.options.DOT_RADIUS);
   }
 
   clear() {
@@ -132,14 +132,12 @@ export class Line extends Chart {
 
   getLegend() {
     // Return the z items along with their colors
-    return d3.map(this.items, d => {
-      return Object.assign({color: this.getColor(d.key)}, d);
+    return d3.map(this.items, (d) => {
+      return Object.assign({ color: this.getColor(d.key) }, d);
     });
   }
 
-  hide(z) {
-
-  }
+  hide(z) {}
 
   placeDot(i) {
     // Place a dot at the given value
@@ -153,15 +151,23 @@ export class Line extends Chart {
   hideDot() {
     this.dot.style("display", "none");
   }
-  
+
   noHighlight() {
-    this.path.attr("opacity", 1.0).attr("stroke-width", this.options.STROKE_WIDTH);
+    this.path
+      .attr("opacity", 1.0)
+      .attr("stroke-width", this.options.STROKE_WIDTH);
   }
 
   highlight(z) {
     // Hide paths that aren't the currently selected path
-    this.path.attr("opacity", ([elem]) => (elem === z ? 1.0 : this.options.UNHIGHLIGHTED_OPACITY));
-    this.path.attr("stroke-width", ([elem]) => (elem === z ? this.options.HIGHLIGHT_STROKE_WIDTH : this.options.STROKE_WIDTH));
+    this.path.attr("opacity", ([elem]) =>
+      elem === z ? 1.0 : this.options.UNHIGHLIGHTED_OPACITY,
+    );
+    this.path.attr("stroke-width", ([elem]) =>
+      elem === z
+        ? this.options.HIGHLIGHT_STROKE_WIDTH
+        : this.options.STROKE_WIDTH,
+    );
   }
 
   enableHover(move, leave) {
@@ -171,7 +177,7 @@ export class Line extends Chart {
     const pointermove = (evt) => {
       const [xm, ym] = d3.pointer(evt);
       const index = d3.least(this.I, (i) =>
-        Math.hypot(this.xScale(this.X[i]) - xm, this.yScale(this.Y[i]) - ym)
+        Math.hypot(this.xScale(this.X[i]) - xm, this.yScale(this.Y[i]) - ym),
       );
 
       // Do not place a tooltip if no point was found
@@ -202,18 +208,18 @@ export class Line extends Chart {
       if (move) {
         move.call(this, data);
       }
-    }
+    };
 
     const pointerleave = (evt) => {
       this.hideDot();
       if (leave) {
         leave.call(this);
       }
-    }
+    };
 
     this.svg
       .on("pointermove", throttle(pointermove, 20)) // ~48fps
-      .on("pointerleave", pointerleave)
+      .on("pointerleave", pointerleave);
   }
 
   // TODO pre-calculate?

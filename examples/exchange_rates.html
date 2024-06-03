@@ -21,14 +21,27 @@ body {
   flex-wrap: wrap;
 }
 .legendItem {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   margin-bottom: 8px;
   padding-right: 1rem !important;
   display: flex;
   align-items: center;
+  cursor: pointer;
+}
+.legendItem[data-hidden="true"] {
+  opacity: 0.4;
 }
 .legendItem > svg {
-  padding-right: 0.3rem !important;
+  padding-right: 0.4rem !important;
+  height: 12px;
+  width: 12px;
+}
+.legendItem > svg > rect {
+  height: 12px;
+  width: 12px;
+}
+.legendItem > span {
+  user-select: none;
 }
 #chart-tooltip {
   line-height: 1.4;
@@ -46,7 +59,7 @@ body {
     <script src="exchange_rates.min.js"></script>
     <template id="legendTemplate">
       <div class="legendItem">
-        <svg height="14" width="14"><rect height="13" width="13"></rect></svg>
+        <svg><rect /></svg>
         <span></span>
       </div>
     </template>
@@ -60,22 +73,7 @@ const items = chart.getLegend();
 const legend = document.querySelector("#legend");
 const template = document.querySelector("#legendTemplate");
 
-items.forEach((item) => {
-  const clone = template.content.cloneNode(true);
-  // clone.dataset.abbrev = item.abbrev;
-  const div = clone.querySelector("div");
-  div.dataset.abbrev = item.abbrev;
-  clone
-    .querySelector("rect")
-    .setAttribute("fill", item.color);
-  clone.querySelector("span").textContent = `${item.name}`;
-  legend.appendChild(clone);
-
-  // Create hover events that highlight chart on legend hover
-  // div.addEventListener("mouseover", (elem) => {
-  //   chart.highlight(item.abbrev);
-  // });
-});
+const hidden = new Set();
 
 chart.render("#chart");
 
@@ -120,6 +118,64 @@ function onLeave() {
 }
 
 chart.enableHover(onMove, onLeave);
+
+items.forEach((item) => {
+  const clone = template.content.cloneNode(true);
+  // clone.dataset.abbrev = item.abbrev;
+  const div = clone.querySelector("div");
+  div.dataset.abbrev = item.abbrev;
+
+  // Initial show/hide state can be set here
+  div.dataset.hidden = "";
+
+  clone
+    .querySelector("rect")
+    .setAttribute("fill", item.color);
+  clone.querySelector("span").textContent = `${item.name}`;
+  legend.appendChild(clone);
+
+  // Create hover events that highlight chart on legend hover
+  // div.addEventListener("mouseover", (elem) => {
+  //   chart.highlight(item.abbrev);
+  // });
+
+  // Show only that item when double click
+  div.addEventListener("dblclick", (evt) => {
+    // Hide everything except the current item
+    hidden.clear();
+
+    Array.from(legend.children).forEach(elem => {
+      if (elem.dataset.abbrev === item.abbrev) {
+        elem.dataset.hidden = "";
+      } else {
+        hidden.add(elem.dataset.abbrev);
+        elem.dataset.hidden = true;
+      }
+    });
+    chart.hide(hidden, "#chart");
+    chart.enableHover(onMove, onLeave);
+  });
+
+  // Hide the item when single click, unless it is already hidden, then show
+  div.addEventListener("click", (evt) => {
+    if (div.dataset.hidden === "") {
+      hidden.add(item.abbrev);
+      chart.hide(hidden, "#chart");
+      chart.enableHover(onMove, onLeave);
+      div.dataset.hidden = "true";
+    } else {
+      hidden.delete(item.abbrev);
+      chart.hide(hidden, "#chart");
+      chart.enableHover(onMove, onLeave);
+      div.dataset.hidden = "";
+    }
+  });
+
+  // Prevent accidental highlighting on Safari
+  div.addEventListener('selectstart', (evt) => {
+    evt.preventDefault();
+  });
+});
     </script>
   </body>
 </html>

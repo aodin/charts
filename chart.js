@@ -1,15 +1,17 @@
 import { Options } from "./options";
 
 export class Chart {
-
   // By default, tick format functions are null, which will use the default D3
   // functions. These can be overridden by sub-classes
-  tickFormatX = null
-  tickFormatY = null
+  tickFormatX = null;
+  tickFormatY = null;
 
   constructor(data, options = {}) {
     // TODO Or should Options also be a parent class of Chart?
     this.options = new Options(options);
+
+    // Save the original data in case we want to recalculate
+    this.data = data;
     this.parse(data);
   }
 
@@ -21,13 +23,13 @@ export class Chart {
     // Is defined lookup
     // grouping? for tooltips?
 
-    // TODO This data parse is specific to line series data
+    // This data parse is specific to line series data
     this.X = this.parseX(data);
     this.Y = this.parseY(data);
     this.Z = this.parseZ(data);
 
-    // TODO Get distinct z items from the list of Z values or the data if defined
-    this.z = data.z;
+    // Get distinct items from the list of Z values
+    this.items = new Set(this.Z);
 
     // Defined?
     // TODO This doesn't work for missing values
@@ -37,6 +39,7 @@ export class Chart {
     // grouping
     this.I = d3.range(this.X.length);
     this.grouping = d3.group(this.I, (i) => this.Z[i]); // {name: [indexes...]}
+    // TODO What is grouping used for?
 
     // Colors
     // TODO discrete v continuous?
@@ -47,7 +50,7 @@ export class Chart {
     // Function for formatting X values, called before sending to hover data callbacks
     return value;
   }
-  
+
   formatY(value) {
     // Function for formatting Y values, called before sending to hover data callbacks
     return value;
@@ -59,15 +62,15 @@ export class Chart {
   }
 
   parseX(data) {
-    return d3.map(data.values, (d) => d3.isoParse(d[0]));
+    return d3.map(data, (d) => d3.isoParse(d[0]));
   }
 
   parseY(data) {
-    return d3.map(data.values, (d) => d[1]);
+    return d3.map(data, (d) => d[1]);
   }
 
   parseZ(data) {
-    return d3.map(data.values, (d) => d[2]);
+    return d3.map(data, (d) => d[2]);
   }
 
   getDomainX() {

@@ -4,9 +4,9 @@
 // [2] = Z data (or categorical items)
 
 class Data {
-
+  // TODO Separate into values and items?
+  // Optional tick values?
 }
-
 
 export class TimeseriesArray {
   // By default, the Data parsing assumes that values are an array of arrays,
@@ -15,18 +15,16 @@ export class TimeseriesArray {
     this.X = d3.map(data, (d) => d3.isoParse(d[0]));
     this.Y = d3.map(data, (d) => d[1]);
     this.Z = d3.map(data, (d) => d[2]);
-    this.D = getDefined(data)
+    this.D = getDefined(data);
 
     // By default, the list of items are determined from distinct Z values
     this.items = new Set(this.Z);
   }
 
   getItems(data) {
-    // By default, items are determined by unique values 
+    // By default, items are determined by unique values
     // TODO They should be in order of appearance in the values
-
   }
-
 
   getDefined(data) {
     // Determine if the values at a given index are defined
@@ -60,4 +58,4 @@ export class TimeseriesArray {
 // 1. Single value: string/number
 // 2. Object, with one property being what's in the values
 
-// We can always use mappers... 
+// We can always use mappers...

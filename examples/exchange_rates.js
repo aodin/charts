@@ -27,12 +27,16 @@ export class ExchangeRates extends Line {
     // * color mapping (discrete / scale)
     // Is defined lookup
     // grouping? for tooltips?
-
+    let values = data.values;
+    if (hide && hide.size > 0) {
+      // Remove the items from the values before parsing
+      values = data.values.filter((item) => !hide.has(item[1]));
+    }
 
     // TODO This data parse is specific to line series data
-    this.X = d3.map(data.values, (d) => d3.isoParse(d[0]));
-    this.Y = d3.map(data.values, (d) => d[2]);
-    this.Z = d3.map(data.values, (d) => d[1]);
+    this.X = d3.map(values, (d) => d3.isoParse(d[0]));
+    this.Y = d3.map(values, (d) => d[2]);
+    this.Z = d3.map(values, (d) => d[1]);
 
     // Items stores additional info on Z axis keys
     this.items = data.items;
@@ -43,7 +47,7 @@ export class ExchangeRates extends Line {
     // Defined?
     // TODO This doesn't work for missing values
     const defined = (d, i) => !isNaN(this.X[i]) && !isNaN(this.Y[i]);
-    this.D = d3.map(data.values, defined);
+    this.D = d3.map(values, defined);
 
     // grouping
     this.I = d3.range(this.X.length);
@@ -52,6 +56,12 @@ export class ExchangeRates extends Line {
     // Colors
     // TODO discrete v continuous?
     this.setColors(data);
+  }
+
+  hide(items, elem) {
+    this.clear();
+    this.parse(this.data, new Set(items));
+    this.render(elem)
   }
 
   setColors(data) {
