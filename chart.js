@@ -1,6 +1,12 @@
 import { Options } from "./options";
 
 export class Chart {
+
+  // By default, tick format functions are null, which will use the default D3
+  // functions. These can be overridden by sub-classes
+  tickFormatX = null
+  tickFormatY = null
+
   constructor(data, options = {}) {
     // TODO Or should Options also be a parent class of Chart?
     this.options = new Options(options);
@@ -35,6 +41,21 @@ export class Chart {
     // Colors
     // TODO discrete v continuous?
     this.setColors(data);
+  }
+
+  formatX(value) {
+    // Function for formatting X values, called before sending to hover data callbacks
+    return value;
+  }
+  
+  formatY(value) {
+    // Function for formatting Y values, called before sending to hover data callbacks
+    return value;
+  }
+
+  formatZ(key) {
+    // Function for formatting Z values, called before sending to hover data callbacks
+    return key;
   }
 
   parseX(data) {

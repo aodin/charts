@@ -50,11 +50,6 @@ export class Line extends Chart {
 
     this.createSVG(elem, dimensions);
 
-    // TODO pointer events
-    // .on("pointerenter pointermove", throttle(pointermoved, 40)) // ~24fps
-    // .on("pointerleave", pointerleft)
-    // .on("touchstart", (event) => event.preventDefault());
-
     // X-axis
     this.xScale = d3
       .scaleUtc()
@@ -64,8 +59,8 @@ export class Line extends Chart {
     let xAxis = d3
       .axisBottom(this.xScale)
       // .tickValues(q1s)
-      .tickSizeInner(4); // TODO setting for inner tick size
-    // .tickFormat(Q);  // TODO setting for tick format
+      .tickFormat(this.tickFormatX)
+      .tickSizeInner(this.options.X_TICK_SIZE);
 
     // TODO Setting for tick padding?
     this.svg
@@ -86,7 +81,7 @@ export class Line extends Chart {
 
     let yAxis = d3
       .axisLeft(this.yScale)
-      // .tickFormat(percentAxisFormat)
+      .tickFormat(this.tickFormatY)
       .tickSize(0)
       .ticks(8); // TODO Number of ticks
 
@@ -118,7 +113,7 @@ export class Line extends Chart {
     this.path = this.svg
       .append("g")
       .attr("fill", "none")
-      .attr("stroke-width", 1.5) // TODO Setting for default with
+      .attr("stroke-width", this.options.STROKE_WIDTH)
       .selectAll("path")
       .data(this.grouping)
       .join("path")
@@ -137,11 +132,8 @@ export class Line extends Chart {
 
   getLegend() {
     // Return the z items along with their colors
-    return d3.map(this.z, d => {
-      if (isObject(d)) {
-        return Object.assign({color: this.getColor(d.name)}, d); 
-      }
-      return {name: d, color: this.getColor(d)};
+    return d3.map(this.items, d => {
+      return Object.assign({color: this.getColor(d.key)}, d);
     });
   }
 
@@ -193,14 +185,18 @@ export class Line extends Chart {
       this.placeDot(index);
 
       const x = this.X[index];
-      const y = this.Y[index]
+      const y = this.Y[index];
+      const z = this.Z[index];
 
       let data = {
         x: x,
         y: y,
-        z: this.Z[index],
+        z: z,
         dx: this.xScale(x),
         dy: this.yScale(y),
+        fx: this.formatX(x),
+        fy: this.formatY(y),
+        fz: this.formatZ(z),
       };
 
       if (move) {

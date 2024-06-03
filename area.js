@@ -6,9 +6,11 @@ import { Chart } from "./chart";
 
 export class Area extends Chart {
   parse(data) {
-    // TODO How to build the stack? Use the given category order?
+    // TODO How to build the stack? Use the given order of items?
     // TODO Unique z values vs all z values?
-    this.Z = d3.map(data.z, (d) => d.name);
+    // TODO Handle the default case of values being an array of arrays
+    this.items = data.items;
+    this.Z = d3.map(data.items, (d) => d.name);
 
     // Index the data by x, then by z for each x
     const indexed = d3.index(
@@ -16,8 +18,6 @@ export class Area extends Chart {
       (d) => d3.isoParse(d[0]),
       (d) => d[2],
     );
-
-    // TODO Where to apply a magnitude?
 
     // Build the stack, one array per item, with an elem for each quarter
     this.stack = d3
@@ -35,10 +35,6 @@ export class Area extends Chart {
     this.setColors(data);
   }
 
-  parseZ(data) {
-    return d3.map(data.values, (d) => d[2]);
-  }
-
   getDomainX() {
     return d3.extent(this.X);
   }
@@ -48,7 +44,7 @@ export class Area extends Chart {
   }
 
   setColors(data) {
-    this.colors = data.z.reduce((obj, d) => {
+    this.colors = data.items.reduce((obj, d) => {
       obj[d.name] = d.color;
       return obj;
     }, {});
