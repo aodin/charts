@@ -1,7 +1,7 @@
 Charts
 ======
 
-Modular [D3.js](https://d3js.org) chart components.
+Modular [D3.js](https://d3js.org) charts.
 
 Chart are designed as extensible classes with basic defaults. Extend the existing classes to alter behaviors.
 
@@ -24,21 +24,23 @@ export class Example extends Line {
 }
 ```
 
-Charts:
+There are also pre-built files in `/dist/`. These charts expect an array of arrays for data, e.g. `[[x, y, z]...]`. They can be called with:
 
-* Line
-* Area
-* Bar
-* Candlestick
+```js
+(new charts.Line(data)).render("#element");
+```
 
-Components:
+See [examples](/examples) for example line, area, bar, and OHLCV candlestick charts.
 
-* Time-series formats
-* Hover interactions
-* HTML legends and tooltips
-* Animations
 
-See [examples](/examples) for more.
+### Development
+
+Build with:
+
+```
+npm run build
+```
+
 
 Happy hacking!
 

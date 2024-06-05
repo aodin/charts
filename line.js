@@ -19,7 +19,7 @@ Settings:
 Data format: {}
 x: range or items
 y: range or items
-z: [{name, slug, etc}]
+z: [{name, slug, etc...}]
 values: [x, y, z]
 formatters?
 
@@ -30,30 +30,7 @@ import { getDimensions } from "./layout";
 import { Chart } from "./chart";
 import { throttle } from "./throttle";
 
-function isObject(v) {
-  return v !== null && typeof v === "object" && !Array.isArray(v);
-}
-
 export class Line extends Chart {
-  getMargin(width, height) {
-    return {
-      top: 15,
-      right: 15,
-      bottom: 25,
-      left: 45,
-    };
-  }
-
-  getTickValuesX() {
-    // D3.js will use the default tick values if null is used
-    return null;
-  }
-
-  getTickValuesY() {
-    // D3.js will use the default tick values if null is used
-    return null;
-  }
-
   render(elem) {
     // If there is no data, do not render
     if (!this.X.length) {
@@ -98,7 +75,7 @@ export class Line extends Chart {
 
     let yAxis = d3
       .axisLeft(this.yScale)
-      .tickFormat(this.getTickValuesY())
+      .tickValues(this.getTickValuesY())
       .tickFormat(this.tickFormatY)
       .tickSize(0)
       .ticks(8); // TODO Number of ticks
@@ -106,7 +83,6 @@ export class Line extends Chart {
     // Grid lines
     this.svg
       .append("g")
-      // TODO grid gutter setting
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
@@ -159,8 +135,6 @@ export class Line extends Chart {
     });
   }
 
-  hide(z) {}
-
   placeDot(i) {
     // Place a dot at the given value
     const x = this.xScale(this.X[i]);
@@ -182,14 +156,15 @@ export class Line extends Chart {
 
   highlight(z) {
     // Hide paths that aren't the currently selected path
-    this.path.attr("opacity", ([elem]) =>
-      elem === z ? 1.0 : this.options.UNHIGHLIGHTED_OPACITY,
-    );
-    this.path.attr("stroke-width", ([elem]) =>
-      elem === z
-        ? this.options.HIGHLIGHT_STROKE_WIDTH
-        : this.options.STROKE_WIDTH,
-    );
+    this.path
+      .attr("opacity", ([elem]) =>
+        elem === z ? 1.0 : this.options.BACKGROUND_OPACITY,
+      )
+      .attr("stroke-width", ([elem]) =>
+        elem === z
+          ? this.options.HIGHLIGHT_STROKE_WIDTH
+          : this.options.STROKE_WIDTH,
+      );
   }
 
   enableHover(move, leave) {
@@ -240,7 +215,7 @@ export class Line extends Chart {
     };
 
     this.svg
-      .on("pointermove", throttle(pointermove, 20)) // ~48fps
+      .on("pointermove", throttle(pointermove, this.options.eventLatency))
       .on("pointerleave", pointerleave);
   }
 

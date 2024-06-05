@@ -17,12 +17,22 @@ export class Chart {
 
   getMargin(width, height) {
     // TODO Change default margins passed on width and height - set minima? percent?
-    return margin = {
+    return {
       top: 15,
       right: 15,
       bottom: 25,
       left: 45,
     };
+  }
+
+  getTickValuesX() {
+    // D3.js will use the default tick values if null is used
+    return null;
+  }
+
+  getTickValuesY() {
+    // D3.js will use the default tick values if null is used
+    return null;
   }
 
   parse(data) {
@@ -103,7 +113,7 @@ export class Chart {
     this.colors = d3
       .scaleOrdinal()
       .domain(this.items)
-      .range(d3.schemeCategory10)
+      .range(d3.schemeCategory10);
   }
 
   getColor(z) {

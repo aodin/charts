@@ -29,10 +29,7 @@ export function maxTickWidth(defaults, height, domain, format, options) {
     .tickSize(0)
     .ticks(8); // TODO Number of ticks as an option
 
-  const g = hidden
-    .append("g")
-    .style("font-size", options.FONT_SIZE)
-    .call(axis);
+  const g = hidden.append("g").style("font-size", options.FONT_SIZE).call(axis);
 
   // Measure the tick labels
   const labels = g.selectAll(".tick text");
@@ -46,5 +43,5 @@ export function maxTickWidth(defaults, height, domain, format, options) {
   });
 
   // Add some padding
-  return (width + options.X_TICK_GUTTER + 5);
+  return width + options.X_TICK_GUTTER + 5;
 }

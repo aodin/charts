@@ -3,8 +3,9 @@ Area chart
 */
 import { getDimensions } from "./layout";
 import { Chart } from "./chart";
+import { makeDateFormatter } from "./timeseries";
 
-export class Area extends Chart {
+export class Bar extends Chart {
   parse(data) {
     // Get distinct items from the list of Z values
     this.Z = this.parseZ(data);
@@ -33,8 +34,9 @@ export class Area extends Chart {
     this.setColors(data);
   }
 
+  // Since the X data is categorical, return all unique values
   getDomainX() {
-    return d3.extent(this.X);
+    return new Set(this.X);
   }
 
   getDomainY() {
@@ -63,15 +65,21 @@ export class Area extends Chart {
       .ticks(8);
 
     // X-axis
+    console.log();
     const xScale = d3
-      .scaleUtc()
+      .scaleBand()
       .domain(this.getDomainX())
-      .range(this.getRangeX(dimensions, margin));
+      .range(this.getRangeX(dimensions, margin))
+      .padding(this.options.BAND_PADDING)
+      .align(0.1);
 
+    // NOTE The date formatter needs to be created because it uses a
+    // closure to determine a new year
+    // TODO A method to provide custom formatting
+    const dateFormatter = makeDateFormatter();
     let xAxis = d3
       .axisBottom(xScale)
-      .tickValues(this.getTickValuesX())
-      .tickFormat(this.tickFormatX)
+      .tickFormat(dateFormatter)
       .tickSizeInner(this.options.X_TICK_SIZE);
 
     this.svg
@@ -108,22 +116,21 @@ export class Area extends Chart {
           .attr("stroke-opacity", 0.1),
       );
 
-    // Construct an area shape.
-    const area = d3
-      .area()
-      .x((d) => xScale(d.data[0]))
-      .y0((d) => yScale(d[0]))
-      .y1((d) => yScale(d[1]));
-
-    // Append a path for each series.
+    // Create a stacked bar chart
     this.svg
       .append("g")
       .selectAll()
       .data(this.stack)
-      .join("path")
+      .join("g")
       .attr("fill", (d) => this.getColor(d.key))
-      .attr("d", area)
-      .append("title") // TODO Option for title
-      .text((d) => d.key);
+      .selectAll("rect")
+      .data((D) => D)
+      .join("rect")
+      .attr("stroke", "white")
+      .attr("stroke-width", this.options.BAR_STROKE_WIDTH)
+      .attr("x", (d) => xScale(d.data[0]))
+      .attr("y", (d) => yScale(d[1]))
+      .attr("height", (d) => yScale(d[0]) - yScale(d[1]))
+      .attr("width", xScale.bandwidth());
   }
 }

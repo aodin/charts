@@ -2,14 +2,13 @@
   "name": "charts",
   "version": "0.0.1",
   "description": "Modular D3.js chart components",
-  "main": " ",
+  "main": "",
   "directories": {
     "example": "examples"
   },
   "scripts": {
     "fmt": "prettier *.js --write",
-    "examples": "esbuild area.js line.js ohlcv.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=examples --global-name=charts --target=es2018",
-    "rates": "esbuild examples/exchange_rates.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=examples --global-name=rates --target=es2018",
+    "dist": "esbuild line.js area.js bar.js ohlcv.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=dist/ --global-name=charts --target=es2018",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -17,7 +16,9 @@
     "url": "git+https://github.com/aodin/charts.git"
   },
   "keywords": [
-    "chart"
+    "chart",
+    "d3",
+    "d3.js"
   ],
   "author": "aodin <aaronoellis@gmail.com>",
   "license": "MIT",

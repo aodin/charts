@@ -314,7 +314,10 @@ export class OHLCV extends Chart {
       }
     };
 
-    this.svg.on("pointermove", throttle(pointermove, 20)); // ~48fps
+    this.svg.on(
+      "pointermove",
+      throttle(pointermove, this.options.eventLatency),
+    );
 
     if (leave) {
       this.svg.on("pointerleave", leave);
