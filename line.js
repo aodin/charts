@@ -35,18 +35,26 @@ function isObject(v) {
 }
 
 export class Line extends Chart {
-  render(elem) {
-    // Determine the size of the DOM element
-    const [width, height] = getBounds(elem, { ratio: 0.35 });
-    const dimensions = { width, height };
-
+  getMargin() {
     // TODO How to adjust margin based on labels?
-    const margin = {
+    return {
       top: 15,
       right: 15,
       bottom: 25,
       left: 45,
     };
+  }
+
+  getTickValuesX() {
+    // D3.js will use the default tick values if null is used
+    return null;
+  }
+
+  render(elem) {
+    // Determine the size of the DOM element
+    const [width, height] = getBounds(elem, { ratio: 0.35 });
+    const dimensions = { width, height };
+    const margin = this.getMargin(height);
 
     this.createSVG(elem, dimensions);
 
@@ -58,17 +66,17 @@ export class Line extends Chart {
 
     let xAxis = d3
       .axisBottom(this.xScale)
-      // .tickValues(q1s)
+      .tickValues(this.getTickValuesX())
       .tickFormat(this.tickFormatX)
       .tickSizeInner(this.options.X_TICK_SIZE);
 
-    // TODO Setting for tick padding?
+    // TODO Setting for tick padding between ?
     this.svg
       .append("g")
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(0,${dimensions.height - margin.bottom + 2})`,
+        `translate(0,${dimensions.height - margin.bottom + this.options.Y_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
@@ -90,7 +98,10 @@ export class Line extends Chart {
       .append("g")
       // TODO grid gutter setting
       .style("font-size", this.options.FONT_SIZE)
-      .attr("transform", `translate(${margin.left - 10},0)`)
+      .attr(
+        "transform",
+        `translate(${margin.left - this.options.X_TICK_GUTTER},0)`,
+      )
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
       .call((g) =>
@@ -99,6 +110,7 @@ export class Line extends Chart {
           .clone()
           .attr("stroke", "#888") // Works for black or white background at 40% opacity
           .attr("stroke-opacity", 0.4)
+          .attr("transform", `translate(${this.options.X_TICK_GUTTER},0)`)
           .attr("x2", dimensions.width - margin.left - margin.right),
       );
 

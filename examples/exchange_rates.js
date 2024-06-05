@@ -2,13 +2,13 @@
 Example exchange rate chart that extends a line chart
 */
 import { Line } from "../line";
-import { discreteColorMap } from "../colors"
+import { discreteColorMap } from "../colors";
 
-const percentChange = new Intl.NumberFormat('en-US', {
-  style: 'percent',
+const percentChange = new Intl.NumberFormat("en-US", {
+  style: "percent",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
-  signDisplay: 'exceptZero',
+  signDisplay: "exceptZero",
 });
 
 function Q(d) {
@@ -19,6 +19,68 @@ function Q(d) {
 
 export class ExchangeRates extends Line {
   tickFormatY = d3.format(",.1%");
+  tickFormatX = (v, i) => v.getUTCFullYear();
+
+  getMargin(height) {
+    // Create a fake axis to test label tick size
+    const hidden = d3
+      .select("body")
+      .append("svg")
+      .attr("width", 500)
+      .attr("height", height)
+      .style("visibility", "hidden"); // "display: none" does not work
+
+    const margin = {
+      top: 15,
+      right: 15,
+      bottom: 15,
+      left: 15,
+    };
+
+    let yScale = d3
+      .scaleLinear()
+      .domain(this.getDomainY())
+      .range(this.getRangeY({ width: 0, height }, margin));
+
+    let yAxis = d3
+      .axisLeft(yScale)
+      .tickFormat(this.tickFormatY)
+      .tickSize(0)
+      .ticks(8); // TODO Number of ticks
+
+    const g = hidden
+      .append("g")
+      .style("font-size", this.options.FONT_SIZE)
+      .call(yAxis);
+
+    // Measure the tick labels
+    const labels = g.selectAll(".tick text");
+
+    // const labels2 = g.selectAll(".tick text");
+    // console.log(labels2, typeof(labels2), labels2.text());
+
+    let width = margin.left;
+    labels.each(function () {
+      const bbox = this.getBBox();
+      if (bbox.width > width) {
+        width = bbox.width;
+      }
+    });
+
+    // Add some padding
+    margin.left = width + this.options.X_TICK_GUTTER + 5;
+    return margin;
+  }
+
+  getTickValuesX() {
+    // Show a tick on the Q1 of every year, instead of Jan 1st
+    const [start, end] = this.getDomainX();
+    const years = d3.range(
+      start.getUTCFullYear() + 1,
+      end.getUTCFullYear() + 1,
+    );
+    return d3.map(years, (year) => new Date(year, 2, 31));
+  }
 
   parse(data, hide) {
     // Parse data object, determine:
@@ -42,7 +104,7 @@ export class ExchangeRates extends Line {
     this.items = data.items;
 
     // The items use abbrev as a key
-    this.byKey = Object.fromEntries(this.items.map(obj => [obj.abbrev, obj]));
+    this.byKey = Object.fromEntries(this.items.map((obj) => [obj.abbrev, obj]));
 
     // Defined?
     // TODO This doesn't work for missing values
@@ -61,7 +123,7 @@ export class ExchangeRates extends Line {
   hide(items, elem) {
     this.clear();
     this.parse(this.data, new Set(items));
-    this.render(elem)
+    this.render(elem);
   }
 
   setColors(data) {
@@ -74,7 +136,7 @@ export class ExchangeRates extends Line {
     // Function for formatting X values, called before sending to hover data callbacks
     return Q(value);
   }
-  
+
   formatY(value) {
     // Function for formatting Y values, called before sending to hover data callbacks
     return percentChange.format(value);
@@ -87,8 +149,8 @@ export class ExchangeRates extends Line {
 
   getLegend() {
     // Return the z items along with their colors
-    return d3.map(this.items, d => {
-      return Object.assign({color: this.getColor(d.abbrev)}, d);
+    return d3.map(this.items, (d) => {
+      return Object.assign({ color: this.getColor(d.abbrev) }, d);
     });
   }
 }

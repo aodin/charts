@@ -28,13 +28,13 @@ export class Chart {
     this.Y = this.parseY(data);
     this.Z = this.parseZ(data);
 
-    // Get distinct items from the list of Z values
+    // Get distinct items from the set of Z values
     this.items = new Set(this.Z);
 
     // Defined?
     // TODO This doesn't work for missing values
     const defined = (d, i) => !isNaN(this.X[i]) && !isNaN(this.Y[i]);
-    this.D = d3.map(data.values, defined);
+    this.D = d3.map(data, defined);
 
     // grouping
     this.I = d3.range(this.X.length);
@@ -90,15 +90,10 @@ export class Chart {
   }
 
   setColors(data) {
-    const z = data.z.reduce((obj, d) => {
-      obj[d.name] = d.color;
-      return obj;
-    }, {});
-    // TODO Or just use the z object?
     this.colors = d3
       .scaleOrdinal()
-      .domain(Object.keys(z))
-      .range(Object.values(z));
+      .domain(this.items)
+      .range(d3.schemeCategory10)
   }
 
   getColor(z) {
