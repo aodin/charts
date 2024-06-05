@@ -15,6 +15,16 @@ export class Chart {
     this.parse(data);
   }
 
+  getMargin(width, height) {
+    // TODO Change default margins passed on width and height - set minima? percent?
+    return margin = {
+      top: 15,
+      right: 15,
+      bottom: 25,
+      left: 45,
+    };
+  }
+
   parse(data) {
     // Parse data object, determine:
     // * x, y, z values as desired types

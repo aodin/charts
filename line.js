@@ -26,7 +26,7 @@ formatters?
 Have functions to automatically detect properties, but always allow them
 to be overridden by settings
 */
-import { getBounds } from "./bounds";
+import { getDimensions } from "./layout";
 import { Chart } from "./chart";
 import { throttle } from "./throttle";
 
@@ -35,8 +35,7 @@ function isObject(v) {
 }
 
 export class Line extends Chart {
-  getMargin() {
-    // TODO How to adjust margin based on labels?
+  getMargin(width, height) {
     return {
       top: 15,
       right: 15,
@@ -50,11 +49,21 @@ export class Line extends Chart {
     return null;
   }
 
+  getTickValuesY() {
+    // D3.js will use the default tick values if null is used
+    return null;
+  }
+
   render(elem) {
+    // If there is no data, do not render
+    if (!this.X.length) {
+      return;
+    }
+
     // Determine the size of the DOM element
-    const [width, height] = getBounds(elem, { ratio: 0.35 });
+    const [width, height] = getDimensions(elem, { ratio: 0.35 });
     const dimensions = { width, height };
-    const margin = this.getMargin(height);
+    const margin = this.getMargin(width, height);
 
     this.createSVG(elem, dimensions);
 
@@ -89,6 +98,7 @@ export class Line extends Chart {
 
     let yAxis = d3
       .axisLeft(this.yScale)
+      .tickFormat(this.getTickValuesY())
       .tickFormat(this.tickFormatY)
       .tickSize(0)
       .ticks(8); // TODO Number of ticks

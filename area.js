@@ -1,7 +1,7 @@
 /*
 Area chart
 */
-import { getBounds } from "./bounds";
+import { getDimensions } from "./layout";
 import { Chart } from "./chart";
 
 export class Area extends Chart {
@@ -43,18 +43,11 @@ export class Area extends Chart {
 
   render(elem) {
     // Determine the size of the DOM element
-    const [width, height] = getBounds(elem, { ratio: 0.35 });
+    const [width, height] = getDimensions(elem, { ratio: 0.35 });
     const dimensions = { width, height };
+    const margin = this.getMargin(width, height);
 
     this.createSVG(elem, dimensions);
-
-    // TODO How to adjust margin based on labels?
-    const margin = {
-      top: 15,
-      right: 15,
-      bottom: 25,
-      left: 45,
-    };
 
     // Y-axis
     const yScale = d3

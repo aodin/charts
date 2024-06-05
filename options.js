@@ -6,10 +6,12 @@ export class Options {
     this.X_TICK_GUTTER = 3;
     this.Y_TICK_SIZE = 0;
     this.Y_TICK_GUTTER = 5; // Space between tick label and grid
+    this.FONT_SIZE = "13px";
+    
+    // OHLC
     this.BAND_PADDING = 0.2; // As a percentage of the band
     this.VOLUME_OPACITY = 0.6;
     this.OHLC_COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]
-    this.FONT_SIZE = "13px";
 
     // Line charts
     this.STROKE_WIDTH = 1.5;

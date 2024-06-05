@@ -1,7 +1,7 @@
 /*
 OHLCV chart
 */
-import { getBounds } from "./bounds";
+import { getDimensions, maxTickWidth } from "./layout";
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
@@ -25,6 +25,34 @@ export class OHLCV extends Chart {
     this.Yc = d3.map(data, (d) => d[4]);
     this.Yv = d3.map(data, (d) => d[5]);
     this.I = d3.range(this.X.length);
+  }
+
+  getMargin(width, height) {
+    const margin = {
+      top: 15,
+      right: 25,
+      bottom: 25,
+      left: 40,
+    };
+
+    // Adjust the left margin to accommodate the price ticks
+    margin.left = maxTickWidth(
+      margin,
+      height,
+      this.getDomainY(),
+      this.tickFormatY,
+      this.options,
+    );
+
+    // Adjust the right margin to accommodate the volume tick
+    margin.right = maxTickWidth(
+      margin,
+      height,
+      this.yDomainVolume,
+      volumeFormatter,
+      this.options,
+    );
+    return margin;
   }
 
   getDomainX() {
@@ -52,16 +80,9 @@ export class OHLCV extends Chart {
 
   render(elem) {
     // Determine the size of the DOM element
-    const [width, height] = getBounds(elem, { ratio: 0.35 });
+    const [width, height] = getDimensions(elem, { ratio: 0.35 });
     const dimensions = { width, height };
-
-    // TODO How to adjust margin based on labels?
-    const margin = {
-      top: 15,
-      right: 25,
-      bottom: 25,
-      left: 40,
-    };
+    const margin = this.getMargin(width, height);
 
     // TODO How to generalize different chart sections? sub-axes?
     const chartHeight = height - margin.top - margin.bottom;
@@ -116,7 +137,7 @@ export class OHLCV extends Chart {
 
     const yAxisVolume = d3
       .axisRight(yScaleVolume)
-      .ticks(2) // Never show more than 1 non-zero tick for the volume
+      .ticks(1) // Never show more than 1 non-zero tick for the volume
       .tickFormat(volumeFormatter)
       .tickSize(3);
 
@@ -275,6 +296,7 @@ export class OHLCV extends Chart {
         l: this.Yl[index],
         c: this.Yc[index],
         v: this.Yv[index],
+        // TODO Return formatted values?
       };
 
       if (index > 0) {
@@ -282,6 +304,7 @@ export class OHLCV extends Chart {
         if (data.prev) {
           data.delta = data.c - data.prev;
           data.percent = data.delta / data.prev;
+          data.color = this.options.OHLC_COLORS[1 + Math.sign(-data.delta)];
         }
       }
 

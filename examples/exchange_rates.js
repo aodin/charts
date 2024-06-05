@@ -2,6 +2,7 @@
 Example exchange rate chart that extends a line chart
 */
 import { Line } from "../line";
+import { maxTickWidth } from "../layout";
 import { discreteColorMap } from "../colors";
 
 const percentChange = new Intl.NumberFormat("en-US", {
@@ -21,15 +22,7 @@ export class ExchangeRates extends Line {
   tickFormatY = d3.format(",.1%");
   tickFormatX = (v, i) => v.getUTCFullYear();
 
-  getMargin(height) {
-    // Create a fake axis to test label tick size
-    const hidden = d3
-      .select("body")
-      .append("svg")
-      .attr("width", 500)
-      .attr("height", height)
-      .style("visibility", "hidden"); // "display: none" does not work
-
+  getMargin(width, height) {
     const margin = {
       top: 15,
       right: 15,
@@ -37,38 +30,14 @@ export class ExchangeRates extends Line {
       left: 15,
     };
 
-    let yScale = d3
-      .scaleLinear()
-      .domain(this.getDomainY())
-      .range(this.getRangeY({ width: 0, height }, margin));
+    margin.left = maxTickWidth(
+      margin,
+      height,
+      this.getDomainY(),
+      this.tickFormatY,
+      this.options,
+    )
 
-    let yAxis = d3
-      .axisLeft(yScale)
-      .tickFormat(this.tickFormatY)
-      .tickSize(0)
-      .ticks(8); // TODO Number of ticks
-
-    const g = hidden
-      .append("g")
-      .style("font-size", this.options.FONT_SIZE)
-      .call(yAxis);
-
-    // Measure the tick labels
-    const labels = g.selectAll(".tick text");
-
-    // const labels2 = g.selectAll(".tick text");
-    // console.log(labels2, typeof(labels2), labels2.text());
-
-    let width = margin.left;
-    labels.each(function () {
-      const bbox = this.getBBox();
-      if (bbox.width > width) {
-        width = bbox.width;
-      }
-    });
-
-    // Add some padding
-    margin.left = width + this.options.X_TICK_GUTTER + 5;
     return margin;
   }
 
