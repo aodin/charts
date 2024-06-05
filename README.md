@@ -3,6 +3,12 @@ Charts
 
 Modular [D3.js](https://d3js.org) charts.
 
+Install with:
+
+```
+npm i @aodin/charts
+```
+
 Chart are designed as extensible classes with basic defaults. Extend the existing classes to alter behaviors.
 
 ```js
@@ -40,7 +46,6 @@ Build with:
 ```
 npm run build
 ```
-
 
 Happy hacking!
 
