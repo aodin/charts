@@ -12,7 +12,7 @@ npm i @aodin/charts
 Chart are designed as extensible classes with basic defaults. Extend the existing classes to alter behaviors.
 
 ```js
-import { Line } from "charts/line";
+import { Line } from "@aodin/charts/line";
 
 export class Example extends Line {
   // Parse an array of objects instead of an array of arrays
