@@ -29,3 +29,11 @@ export function makeMonthlyDateFormatter() {
     return month(d);
   };
 }
+
+export function quarter(d) {
+  // Format a Date as a quarter and year
+  const q = parseInt(d.getUTCMonth() / 3) + 1;
+  return `${q}Q ${d.getUTCFullYear()}`;
+}
+
+export const year = (d) => d.getUTCFullYear();

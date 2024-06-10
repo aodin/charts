@@ -1,7 +1,7 @@
 Charts
 ======
 
-Modular [D3.js](https://d3js.org) charts.
+Modular [D3.js](https://d3js.org) charts. View a live demo at https://aodin.github.io/charts/.
 
 Install with:
 
@@ -12,7 +12,7 @@ npm i @aodin/charts
 Chart are designed as extensible classes with basic defaults. Extend the existing classes to alter behaviors.
 
 ```js
-import { Line } from "@aodin/charts/line";
+import { Line } from "@aodin/charts";
 
 export class Example extends Line {
   // Parse an array of objects instead of an array of arrays
@@ -36,7 +36,7 @@ There are also pre-built files in `/dist/`. These charts expect an array of arra
 (new charts.Line(data)).render("#element");
 ```
 
-See [examples](/examples) for example line, area, bar, and OHLCV candlestick charts. You can also view live demos at https://aodin.github.io/charts/
+See [examples](/examples) for example line, area, bar, and OHLCV candlestick charts.
 
 
 ### Development
