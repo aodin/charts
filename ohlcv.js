@@ -1,7 +1,7 @@
 /*
 OHLCV chart
 */
-import { getDimensions, maxTickWidth } from "./layout";
+import { maxTickWidth } from "./layout";
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
@@ -80,7 +80,7 @@ export class OHLCV extends Chart {
 
   render(elem) {
     // Determine the size of the DOM element
-    const [width, height] = getDimensions(elem, { ratio: 0.35 });
+    const [width, height] = this.getDimensions(elem);
     const dimensions = { width, height };
     const margin = this.getMargin(width, height);
 

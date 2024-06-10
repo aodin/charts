@@ -36,7 +36,7 @@ There are also pre-built files in `/dist/`. These charts expect an array of arra
 (new charts.Line(data)).render("#element");
 ```
 
-See [examples](/examples) for example line, area, bar, and OHLCV candlestick charts.
+See [examples](/examples) for example line, area, bar, and OHLCV candlestick charts. You can also view live demos at https://aodin.github.io/charts/
 
 
 ### Development

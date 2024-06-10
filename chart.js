@@ -1,4 +1,5 @@
 import { Options } from "./options";
+import { getDimensions } from "./layout";
 
 export class Chart {
   // By default, tick format functions are null, which will use the default D3
@@ -118,6 +119,11 @@ export class Chart {
 
   getColor(z) {
     return this.colors(z);
+  }
+
+  getDimensions(elem) {
+    // Given the chart's DOM element, return the desired width and height for drawing
+    return getDimensions(elem, { ratio: 0.35 });
   }
 
   createSVG(elem, dimensions) {
