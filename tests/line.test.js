@@ -2,7 +2,7 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { Line } from "../line";
+import { Line } from "../src/line";
 import { monthly } from "./data";
 
 describe("Line", () => {

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { volume } from "../formats";
+import { volume } from "../src/formats";
 
 test("volume", () => {
   expect(volume(0)).toBeUndefined();

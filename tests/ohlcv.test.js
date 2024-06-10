@@ -2,7 +2,7 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { OHLCV } from "../ohlcv";
+import { OHLCV } from "../src/ohlcv";
 import { candles } from "./data";
 
 describe("OHLCV", () => {

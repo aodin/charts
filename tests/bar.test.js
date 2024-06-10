@@ -2,7 +2,7 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { Bar } from "../bar";
+import { Bar } from "../src/bar";
 import { monthly } from "./data";
 
 describe("Bar", () => {

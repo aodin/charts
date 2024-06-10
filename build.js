@@ -2,7 +2,7 @@ const esbuild = require("esbuild");
 const { externalGlobalPlugin } = require("esbuild-plugin-external-global");
 
 esbuild.build({
-  entryPoints: ["area.js", "line.js", "ohlcv.js", "bar.js"],
+  entryPoints: ["src/area.js", "src/line.js", "src/ohlcv.js", "src/bar.js"],
   globalName: "charts",
   bundle: true,
   minify: true,

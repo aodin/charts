@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { getDimensions } from "../layout";
+import { getDimensions } from "../src/layout";
 
 describe("Layout", () => {
   beforeEach(() => {
