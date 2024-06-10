@@ -1,15 +1,15 @@
 {
   "name": "@aodin/charts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Modular D3.js chart components",
   "main": "",
   "directories": {
     "example": "examples"
   },
   "scripts": {
-    "fmt": "prettier *.js --write",
-    "dist": "esbuild line.js area.js bar.js ohlcv.js --bundle --minify --sourcemap --out-extension:.js=.min.js --outdir=dist/ --global-name=charts --target=es2018",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "fmt": "prettier --write *.js tests/*.js",
+    "dist": "node build.js",
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -31,6 +31,9 @@
   },
   "devDependencies": {
     "esbuild": "^0.21.5",
-    "prettier": "^3.3.1"
+    "esbuild-plugin-external-global": "^1.0.1",
+    "happy-dom": "^14.12.0",
+    "prettier": "^3.3.1",
+    "vitest": "^1.6.0"
   }
 }

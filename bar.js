@@ -1,6 +1,8 @@
 /*
-Area chart
+Bar chart - stacked bars
 */
+import * as d3 from "d3";
+
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 
@@ -64,7 +66,6 @@ export class Bar extends Chart {
       .ticks(8);
 
     // X-axis
-    console.log();
     const xScale = d3
       .scaleBand()
       .domain(this.getDomainX())
@@ -104,6 +105,8 @@ export class Bar extends Chart {
         g
           .selectAll(".tick line")
           .clone()
+          .attr("stroke", "#888") // Works for black or white background at 40% opacity
+          .attr("stroke-opacity", 0.4)
           .attr("x1", this.options.Y_TICK_GUTTER)
           .attr(
             "x2",
@@ -111,8 +114,7 @@ export class Bar extends Chart {
               margin.right -
               margin.left +
               this.options.Y_TICK_GUTTER,
-          )
-          .attr("stroke-opacity", 0.1),
+          ),
       );
 
     // Create a stacked bar chart
@@ -125,7 +127,6 @@ export class Bar extends Chart {
       .selectAll("rect")
       .data((D) => D)
       .join("rect")
-      .attr("stroke", "white")
       .attr("stroke-width", this.options.BAR_STROKE_WIDTH)
       .attr("x", (d) => xScale(d.data[0]))
       .attr("y", (d) => yScale(d[1]))

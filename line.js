@@ -1,31 +1,7 @@
 /*
 Line chart
-
-Show multiple items in a line chart.
-* X-axis supports any time-scale, e.g. Daily, Monthly, Quarterly, Yearly
-* Y-axis supports a value with a formatter, e.g. Units, Percent, Money
-* Customizable color scale
-* Works with light and dark mode
-* Ability to clear and refresh self without losing cached data
-
-Options to:
-* Have a tooltip displayed on the chart
-* Highlight the selected line, lower the opacity of unselected lines
-* Legend items, with optional show/hide controls
-
-Settings:
-* line width, highlighted line width
-
-Data format: {}
-x: range or items
-y: range or items
-z: [{name, slug, etc...}]
-values: [x, y, z]
-formatters?
-
-Have functions to automatically detect properties, but always allow them
-to be overridden by settings
 */
+import * as d3 from "d3";
 
 import { Chart } from "./chart";
 import { throttle } from "./throttle";
@@ -33,9 +9,7 @@ import { throttle } from "./throttle";
 export class Line extends Chart {
   render(elem) {
     // If there is no data, do not render
-    if (!this.X.length) {
-      return;
-    }
+    if (!this.X.length) return;
 
     // Determine the size of the DOM element
     const [width, height] = this.getDimensions(elem);
@@ -56,7 +30,6 @@ export class Line extends Chart {
       .tickFormat(this.tickFormatX)
       .tickSizeInner(this.options.X_TICK_SIZE);
 
-    // TODO Setting for tick padding between ?
     this.svg
       .append("g")
       .style("font-size", this.options.FONT_SIZE)
@@ -100,14 +73,13 @@ export class Line extends Chart {
           .attr("x2", dimensions.width - margin.left - margin.right),
       );
 
-    // line
+    // Plot the line
     const line = d3
       .line()
       .defined((i) => this.D[i])
       .x((i) => this.xScale(this.X[i]))
       .y((i) => this.yScale(this.Y[i]));
 
-    // Plot the line
     this.path = this.svg
       .append("g")
       .attr("fill", "none")
@@ -123,11 +95,6 @@ export class Line extends Chart {
     this.circle = this.dot.append("circle").attr("r", this.options.DOT_RADIUS);
   }
 
-  clear() {
-    // Clear all drawn elements, must have an element set
-    this.svg.selectAll("*").remove();
-  }
-
   getLegend() {
     // Return the z items along with their colors
     return d3.map(this.items, (d) => {
@@ -136,7 +103,7 @@ export class Line extends Chart {
   }
 
   placeDot(i) {
-    // Place a dot at the given value
+    // Place a dot at the given index
     const x = this.xScale(this.X[i]);
     const y = this.yScale(this.Y[i]);
     const z = this.Z[i];
@@ -181,9 +148,7 @@ export class Line extends Chart {
       if (typeof index === "undefined") return;
 
       // Only trigger the callback when the index changes
-      if (prevIndex && prevIndex == index) {
-        return;
-      }
+      if (prevIndex && prevIndex == index) return;
 
       this.placeDot(index);
 
@@ -222,20 +187,4 @@ export class Line extends Chart {
         evt.preventDefault();
       });
   }
-
-  // TODO pre-calculate?
-  // const delaunay = d3.Delaunay.from(points);
 }
-
-/*
-Animation
-
-path
-  .attr("stroke-dasharray", (d, i) => `${lengths[i]} ${lengths[i]}`)
-  .attr("stroke-dashoffset", (d, i) => lengths[i])
-  .attr("stroke", ([d], i) => this.colors[i])
-  .transition()
-  .duration(this.options.ANIMATION_DURATION_MS)
-  .attr("stroke-dashoffset", 0);
-
-*/

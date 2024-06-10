@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 import { Options } from "./options";
 import { getDimensions } from "./layout";
 
@@ -8,16 +10,12 @@ export class Chart {
   tickFormatY = null;
 
   constructor(data, options = {}) {
-    // TODO Or should Options also be a parent class of Chart?
     this.options = new Options(options);
-
-    // Save the original data in case we want to recalculate
-    this.data = data;
+    this.data = data; // Save the original data in case we want to recalculate
     this.parse(data);
   }
 
   getMargin(width, height) {
-    // TODO Change default margins passed on width and height - set minima? percent?
     return {
       top: 15,
       right: 15,
@@ -37,13 +35,6 @@ export class Chart {
   }
 
   parse(data) {
-    // Parse data object, determine:
-    // * x, y, z values as desired types
-    // * items lookup by any property
-    // * color mapping (discrete / scale)
-    // Is defined lookup
-    // grouping? for tooltips?
-
     // This data parse is specific to line series data
     this.X = this.parseX(data);
     this.Y = this.parseY(data);
@@ -52,18 +43,16 @@ export class Chart {
     // Get distinct items from the set of Z values
     this.items = new Set(this.Z);
 
-    // Defined?
-    // TODO This doesn't work for missing values
+    // Is defined?
+    // TODO This doesn't work for missing values, only null or undefined
     const defined = (d, i) => !isNaN(this.X[i]) && !isNaN(this.Y[i]);
     this.D = d3.map(data, defined);
 
-    // grouping
+    // Grouping
     this.I = d3.range(this.X.length);
     this.grouping = d3.group(this.I, (i) => this.Z[i]); // {name: [indexes...]}
-    // TODO What is grouping used for?
 
     // Colors
-    // TODO discrete v continuous?
     this.setColors(data);
   }
 
@@ -114,7 +103,7 @@ export class Chart {
     this.colors = d3
       .scaleOrdinal()
       .domain(this.items)
-      .range(d3.schemeCategory10);
+      .range(this.options.COLORS);
   }
 
   getColor(z) {
@@ -128,7 +117,6 @@ export class Chart {
 
   createSVG(elem, dimensions) {
     // Clear any existing chart
-    // document.querySelector(this.elem).innerHTML = '';
     d3.select(elem).selectAll("svg").remove();
 
     // Create a new chart
@@ -140,5 +128,10 @@ export class Chart {
       .style("-webkit-tap-highlight-color", "transparent")
       .style("font-size", this.options.FONT_SIZE)
       .style("overflow", "visible");
+  }
+
+  clear() {
+    // Clear all drawn elements, must have an element set
+    if (this.svg) this.svg.selectAll("*").remove();
   }
 }

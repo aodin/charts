@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 export const month = d3.utcFormat("%b");
 export const monthDay = d3.utcFormat("%b %-d");
 export const monthYear = d3.utcFormat("%b %Y");

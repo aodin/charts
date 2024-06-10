@@ -1,6 +1,8 @@
 /*
 Area chart
 */
+import * as d3 from "d3";
+
 import { Chart } from "./chart";
 
 export class Area extends Chart {
@@ -96,6 +98,8 @@ export class Area extends Chart {
         g
           .selectAll(".tick line")
           .clone()
+          .attr("stroke", "#888") // Works for black or white background at 40% opacity
+          .attr("stroke-opacity", 0.4)
           .attr("x1", this.options.Y_TICK_GUTTER)
           .attr(
             "x2",
@@ -103,11 +107,10 @@ export class Area extends Chart {
               margin.right -
               margin.left +
               this.options.Y_TICK_GUTTER,
-          )
-          .attr("stroke-opacity", 0.1),
+          ),
       );
 
-    // Construct an area shape.
+    // Construct an area
     const area = d3
       .area()
       .x((d) => xScale(d.data[0]))
@@ -121,8 +124,6 @@ export class Area extends Chart {
       .data(this.stack)
       .join("path")
       .attr("fill", (d) => this.getColor(d.key))
-      .attr("d", area)
-      .append("title") // TODO Option for title
-      .text((d) => d.key);
+      .attr("d", area);
   }
 }

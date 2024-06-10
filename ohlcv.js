@@ -1,20 +1,13 @@
 /*
 OHLCV chart
 */
+import * as d3 from "d3";
+
 import { maxTickWidth } from "./layout";
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
-
-export function volumeFormatter(value) {
-  if (value <= 0) {
-    return ""; // Do not show a tick for zero volume
-  }
-  if (value >= 1e9) {
-    return `${value / 1e9}B`;
-  }
-  return `${value / 1e6}M`;
-}
+import { volume } from "./formats";
 
 export class OHLCV extends Chart {
   parse(data) {
@@ -49,7 +42,7 @@ export class OHLCV extends Chart {
       margin,
       height,
       this.yDomainVolume,
-      volumeFormatter,
+      volume,
       this.options,
     );
     return margin;
@@ -138,7 +131,7 @@ export class OHLCV extends Chart {
     const yAxisVolume = d3
       .axisRight(yScaleVolume)
       .ticks(1) // Never show more than 1 non-zero tick for the volume
-      .tickFormat(volumeFormatter)
+      .tickFormat(volume)
       .tickSize(3);
 
     // Create SVG

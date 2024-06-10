@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html>
-  <head></head>
+  <head>
+    <style type="text/css">
+body {
+  font-family: sans-serif;
+  color: white;
+  background-color: black;
+}
+rect {
+  stroke: black;
+}
+    </style>
+  </head>
   <body>
     <h1>Bar Chart Example</h1>
     <div id="chart"></div>
@@ -24,8 +35,16 @@ const data = [
   ["2020-04-01", 10, "C"],
   ["2020-05-01", 10, "C"],
   ["2020-06-01", 12, "C"],
+  ["2020-01-01", 0, "D"],
+  ["2020-04-01", 30, "D"],
+  ["2020-05-01", 50, "D"],
+  ["2020-06-01", 42, "D"],
+  ["2020-01-01", 40, "E"],
+  ["2020-04-01", 30, "E"],
+  ["2020-05-01", 30, "E"],
+  ["2020-06-01", 32, "E"],
 ];
-(new charts.Bar(data)).render("#chart");
+(new charts.Bar(data, {COLORS: d3.schemeTableau10, BAR_STROKE_WIDTH: 0.5})).render("#chart");
     </script>
   </body>
 </html>

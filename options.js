@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 export class Options {
   constructor(options = {}) {
     this.ANIMATION_DURATION_MS = 500;
@@ -7,6 +9,7 @@ export class Options {
     this.Y_TICK_SIZE = 0;
     this.Y_TICK_GUTTER = 5; // Space between tick label and grid
     this.FONT_SIZE = "13px";
+    this.COLORS = d3.schemeCategory10;
 
     // OHLC
     this.BAND_PADDING = 0.2; // As a percentage of the band

@@ -1,10 +1,12 @@
+import * as d3 from "d3";
+
 export function getDimensions(
   elem,
   { ratio = 0.2, maxWidth = 1600, minWidth = 400, minHeight = 300 } = {},
 ) {
-  const plot = document.querySelector(elem);
-  let width = d3.min([plot.offsetWidth, maxWidth]);
-  width = d3.max([plot.offsetWidth, minWidth]);
+  const chart = document.querySelector(elem);
+  let width = d3.min([chart.offsetWidth, maxWidth]);
+  width = d3.max([chart.offsetWidth, minWidth]);
   let height = d3.max([parseInt(ratio * width), minHeight]);
   return [width, height];
 }
@@ -36,7 +38,7 @@ export function maxTickWidth(defaults, height, domain, format, options) {
 
   let width = 0;
   labels.each(function () {
-    const bbox = this.getBBox();
+    const bbox = this.getBoundingClientRect(); // TODO Or getBBox?
     if (bbox.width > width) {
       width = bbox.width;
     }
