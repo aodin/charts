@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>@aodin/charts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style type="text/css">
 body {
   font-family: sans-serif;
@@ -48,6 +49,23 @@ body {
 #chart-tooltip {
   line-height: 1.4;
   text-shadow: -1px -1px 1px black,1px -1px 1px black,-1px 1px 1px black,1px 1px 1px black;
+}
+@media (max-width: 600px) {
+  #title h1 {
+    font-size: 24px;
+  }
+  .legendItem {
+    font-size: 0.75rem;
+  }
+  .legendItem > svg {
+    padding-right: 0.3rem !important;
+    height: 10px;
+    width: 10px;
+  }
+  .legendItem > svg > rect {
+    height: 10px;
+    width: 10px;
+  }
 }
     </style>
   </head>
