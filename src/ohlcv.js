@@ -66,7 +66,19 @@ export class OHLCV extends Chart {
     ];
   }
 
-  render(elem) {
+  getXTicks() {
+    // For categorical data, it is useful to filter the displayed X ticks
+    // NOTE If dates are missing, we can't use the timeWeek ranges without
+    // checking if the tick has values
+    const xTickCount = this.options.getXTickCount(this.layout.innerWidth);
+    let interval = parseInt(this.X.length / xTickCount);
+    if (interval < 1) {
+      interval = 1;
+    }
+    return d3.filter(this.X, (d, i) => i % interval === 0);
+  }
+
+  render(elem, useLog) {
     // Determine the size of the DOM element
     this.layout = this.getLayout(elem);
     this.layout.padding = this.getPadding(this.layout);
@@ -74,55 +86,47 @@ export class OHLCV extends Chart {
     const pricePortion = 0.9;
     const priceHeight = this.layout.innerHeight * pricePortion;
 
-    const yRange = [this.layout.padding.top + priceHeight, this.layout.padding.top];
+    const yRange = [
+      this.layout.padding.top + priceHeight,
+      this.layout.padding.top,
+    ];
+
     const yRangeVolume = [
       this.layout.padding.top + this.layout.innerHeight,
       this.layout.padding.top + priceHeight,
     ];
 
-    const yLabel = "";
-
-    // NOTE If dates are missing, we can't use the timeWeek ranges without
-    // checking if the tick has values
-    const xRange = this.getRangeX(this.layout);
-    const axisWidth = xRange[1] - xRange[0];
-    const xTickCount = this.options.getXTickCount(axisWidth);
-
-    let interval = parseInt(this.X.length / xTickCount);
-    if (interval < 1) {
-      interval = 1;
-    }
-
-    let xTicks = d3.filter(this.X, (d, i) => i % interval === 0);
-
     // Construct scales and axes
     // NOTE scaleBand takes all 'categorical' x-axis items - not just extent
-    // TODO Play further with padding and align
     this.xScale = d3
-      .scaleBand(this.X, xRange)
+      .scaleBand(this.X, this.getRangeX(this.layout))
       .padding(this.options.BAND_PADDING)
       .align(0.1);
-    const yScale = d3.scaleLinear(this.getDomainY(), yRange);
+
+    const yScale = useLog
+      ? d3.scaleLog(this.getDomainY(), yRange)
+      : d3.scaleLinear(this.getDomainY(), yRange);
     const yScaleVolume = d3.scaleLinear(this.yDomainVolume, yRangeVolume);
 
     // NOTE The date formatter needs to be created because it uses a
     // closure to determine a new year
-    // TODO A method to provide custom formatting
     const dateFormatter = makeDateFormatter();
     const xAxis = d3
       .axisBottom(this.xScale)
       .tickFormat(dateFormatter)
-      .tickValues(xTicks)
+      .tickValues(this.getXTicks())
       .tickSize(this.options.X_TICK_SIZE);
 
     // The band width will be used for correctly positioning the tooltip
     this.bandWidth = this.xScale.step();
 
-    // TODO Set number of ticks
     const yAxis = d3
       .axisLeft(yScale)
-      .ticks(this.options.getYTickCount(priceHeight))
+      .tickValues(this.getTickValuesY())
       .tickSize(this.options.Y_TICK_SIZE);
+
+    // TODO Tick count just hides tick labels
+    // .ticks(this.options.getYTickCount(priceHeight))
 
     const yAxisVolume = d3
       .axisRight(yScaleVolume)
@@ -163,36 +167,19 @@ export class OHLCV extends Chart {
           .attr("stroke", "#bbb") // Works for black or white background at 50% opacity
           .attr("stroke-opacity", 0.5)
           .attr("x1", this.options.Y_TICK_GUTTER)
-          .attr(
-            "x2",
-            this.layout.width + this.options.Y_TICK_GUTTER - this.layout.padding.left - this.layout.padding.right,
-          ),
-      )
-      .call((g) =>
-        g
-          .append("text")
-          .attr("x", -this.layout.padding.left)
-          .attr("y", 10)
-          .attr("fill", "currentColor")
-          .attr("text-anchor", "start")
-          .text(yLabel),
+          .attr("x2", this.layout.innerWidth + this.options.Y_TICK_GUTTER),
       );
 
     // Volume y-axis
     this.svg
       .append("g")
       .style("font-size", this.options.FONT_SIZE)
-      .attr("transform", `translate(${this.layout.width - this.layout.padding.right},0)`)
+      .attr(
+        "transform",
+        `translate(${this.layout.width - this.layout.padding.right},0)`,
+      )
       .call(yAxisVolume)
-      .call((g) => g.select(".domain").remove())
-      .call((g) =>
-        g
-          .append("text")
-          .attr("x", -this.layout.padding.left)
-          .attr("fill", "currentColor")
-          .attr("text-anchor", "start")
-          .text(yLabel),
-      );
+      .call((g) => g.select(".domain").remove());
 
     // Plot OHLC candle sticks
     const g = this.svg
@@ -254,27 +241,29 @@ export class OHLCV extends Chart {
 
     // Optional tooltip / highlighting of day
     // TODO Give the tooltip a class
-    this.tooltip = this.svg.append('g').lower()
+    this.tooltip = this.svg
+      .append("g")
+      .lower()
       .attr("class", "tooltip")
-      .append('rect')
-      .attr('fill', '#bbb')
-      .style('display', 'none')
-      .style('opacity', 0.2)
-      .style('pointer-events', 'none');
+      .append("rect")
+      .attr("fill", "#bbb")
+      .style("display", "none")
+      .style("opacity", 0.2)
+      .style("pointer-events", "none");
   }
 
   highlight(index) {
     // Update tooltip
     this.tooltip
-      .attr('x', this.xScale(this.X[index]))
-      .attr('width', this.bandWidth)
-      .attr('y', this.layout.padding.top)
-      .attr('height', this.layout.innerHeight)
-      .style('display', 'block');
+      .attr("x", this.xScale(this.X[index]))
+      .attr("width", this.bandWidth)
+      .attr("y", this.layout.padding.top)
+      .attr("height", this.layout.innerHeight)
+      .style("display", "block");
   }
 
   noHighlight() {
-    this.tooltip.style('display', 'none');
+    this.tooltip.style("display", "none");
   }
 
   enableHover(move, leave) {

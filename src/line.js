@@ -5,7 +5,6 @@ import * as d3 from "d3";
 
 import { Chart } from "./chart";
 import { throttle } from "./throttle";
-import { screenBasedLayout } from "./layout";
 
 export class Line extends Chart {
   render(elem) {
@@ -51,7 +50,7 @@ export class Line extends Chart {
       .tickValues(this.getTickValuesY())
       .tickFormat(this.tickFormatY)
       .tickSize(0)
-      .ticks(8); // TODO Number of ticks
+      .ticks(this.options.getYTickCount(this.layout.innerHeight));
 
     // Grid lines
     this.svg

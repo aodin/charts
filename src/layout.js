@@ -39,12 +39,21 @@ export class Layout {
 }
 
 export function screenBasedLayout() {
-  return new Layout(window.innerWidth, window.innerHeight, new Padding(15, 15, 15, 15));
+  return new Layout(
+    window.innerWidth,
+    window.innerHeight,
+    new Padding(15, 15, 15, 15),
+  );
 }
 
 export function elementBaseLayout(
   elem,
-  { minWidth = 400, maxWidth = undefined, minHeight = 300, maxHeight = undefined } = {},
+  {
+    minWidth = 400,
+    maxWidth = undefined,
+    minHeight = 300,
+    maxHeight = undefined,
+  } = {},
 ) {
   const chart = document.querySelector(elem);
   let width = d3.max([chart.offsetWidth, minWidth]);

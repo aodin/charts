@@ -95,7 +95,7 @@ let hudTemplate = document.querySelector('#hudTemplate');
 
 const ohlcv = new charts.OHLCV(
   data,
-  {Y_TICK_MAX_COUNT: 6, X_TICK_MAX_COUNT: 10, X_TICK_SPACE: 100},
+  {Y_TICK_MAX_COUNT: 6, X_TICK_MAX_COUNT: 10, X_TICK_SPACE: 100, ANIMATION_DURATION_MS: 0},
 );
 
 function onMove(data) {
@@ -117,7 +117,7 @@ function onLeave() {
   ohlcv.noHighlight();
 }
 
-ohlcv.render("#chart");
+ohlcv.render("#chart", true);
 ohlcv.enableHover(onMove, onLeave);
     </script>
   </body>

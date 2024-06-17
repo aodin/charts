@@ -72,7 +72,7 @@ export class Area extends Chart {
       .axisBottom(xScale)
       .tickValues(this.getTickValuesX())
       .tickFormat(this.tickFormatX)
-      .tickSizeInner(this.options.X_TICK_SIZE)
+      .tickSizeInner(this.options.X_TICK_SIZE);
 
     // TODO If a category, use the "interval" logic as the OHLCV x-axis
 

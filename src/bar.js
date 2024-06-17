@@ -55,18 +55,15 @@ export class Bar extends Chart {
     const yRange = this.getRangeY(this.layout);
     const drawHeight = yRange[0] - yRange[1];
 
-    const yScale = d3
-      .scaleLinear()
-      .domain(this.getDomainY())
-      .range(yRange);
+    const yScale = d3.scaleLinear().domain(this.getDomainY()).range(yRange);
 
     let yAxis = d3
       .axisLeft(yScale)
       .tickValues(this.getTickValuesY())
       .tickFormat(this.tickFormatY)
       .tickSize(0)
-      .ticks(this.options.getYTickCount(drawHeight))
-      
+      .ticks(this.options.getYTickCount(drawHeight));
+
     // X-axis
     const xRange = this.getRangeX(this.layout);
     const drawWidth = xRange[1] - xRange[0];
@@ -114,10 +111,7 @@ export class Bar extends Chart {
           .attr("stroke", "#888") // Works for black or white background at 40% opacity
           .attr("stroke-opacity", 0.4)
           .attr("x1", this.options.Y_TICK_GUTTER)
-          .attr(
-            "x2",
-            this.layout.innerWidth + this.options.Y_TICK_GUTTER,
-          ),
+          .attr("x2", this.layout.innerWidth + this.options.Y_TICK_GUTTER),
       );
 
     // Create a stacked bar chart
