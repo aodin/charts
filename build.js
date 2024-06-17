@@ -3,7 +3,7 @@ const { externalGlobalPlugin } = require("esbuild-plugin-external-global");
 
 (async() => {
   const options = {
-    entryPoints: ["src/area.js", "src/line.js", "src/ohlcv.js", "src/bar.js"],
+    entryPoints: ["src/area.js", "src/line.js", "src/ohlcv.js", "src/bar.js", "src/pie.js"],
     globalName: "charts",
     bundle: true,
     minify: true,

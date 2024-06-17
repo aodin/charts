@@ -36,6 +36,14 @@ export class Layout {
   get innerHeight() {
     return this.height - this.padding.top - this.padding.bottom;
   }
+
+  get innerMinimum() {
+    return d3.min([this.innerWidth, this.innerHeight]);
+  }
+
+  get midpoint() {
+    return [this.width / 2, this.height / 2];
+  }
 }
 
 export function screenBasedLayout() {
