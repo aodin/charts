@@ -21,7 +21,7 @@ describe("Line", () => {
       (d) => line.highlight(d.z),
       () => line.noHighlight(),
     );
-    expect(line.X.length).toBe(16);
+    expect(line.X.length).toBe(monthly.length);
   });
 
   afterEach(() => {

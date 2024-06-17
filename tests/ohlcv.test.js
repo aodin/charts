@@ -17,7 +17,7 @@ describe("OHLCV", () => {
   it("should be rendered on the DOM", () => {
     const ohlcv = new OHLCV(candles);
     ohlcv.render("#chart");
-    expect(ohlcv.X.length).toBe(22);
+    expect(ohlcv.X.length).toBe(candles.length);
 
     function onMove(data) {}
     function onLeave() {}

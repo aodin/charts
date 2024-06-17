@@ -45,31 +45,36 @@ export class Bar extends Chart {
   }
 
   render(elem) {
-    // Determine the size of the DOM element
-    const [width, height] = this.getDimensions(elem);
-    const dimensions = { width, height };
-    const margin = this.getMargin(width, height);
+    // Determine the layout
+    this.layout = this.getLayout(elem);
+    this.layout.padding = this.getPadding(this.layout);
 
-    this.createSVG(elem, dimensions);
+    this.createSVG(elem, this.layout);
 
     // Y-axis
+    const yRange = this.getRangeY(this.layout);
+    const drawHeight = yRange[0] - yRange[1];
+
     const yScale = d3
       .scaleLinear()
       .domain(this.getDomainY())
-      .range(this.getRangeY(dimensions, margin));
+      .range(yRange);
 
     let yAxis = d3
       .axisLeft(yScale)
       .tickValues(this.getTickValuesY())
       .tickFormat(this.tickFormatY)
       .tickSize(0)
-      .ticks(8);
-
+      .ticks(this.options.getYTickCount(drawHeight))
+      
     // X-axis
+    const xRange = this.getRangeX(this.layout);
+    const drawWidth = xRange[1] - xRange[0];
+
     const xScale = d3
       .scaleBand()
       .domain(this.getDomainX())
-      .range(this.getRangeX(dimensions, margin))
+      .range(xRange)
       .padding(this.options.BAND_PADDING)
       .align(0.1);
 
@@ -80,14 +85,15 @@ export class Bar extends Chart {
     let xAxis = d3
       .axisBottom(xScale)
       .tickFormat(dateFormatter)
-      .tickSizeInner(this.options.X_TICK_SIZE);
+      .tickSizeInner(this.options.X_TICK_SIZE)
+      .ticks(this.options.getXTickCount(drawWidth));
 
     this.svg
       .append("g")
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(0,${dimensions.height - margin.bottom + this.options.X_TICK_GUTTER})`,
+        `translate(0,${this.layout.height - this.layout.padding.bottom + this.options.X_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
@@ -97,7 +103,7 @@ export class Bar extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${margin.left - this.options.Y_TICK_GUTTER},0)`,
+        `translate(${this.layout.padding.left - this.options.Y_TICK_GUTTER},0)`,
       )
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
@@ -110,10 +116,7 @@ export class Bar extends Chart {
           .attr("x1", this.options.Y_TICK_GUTTER)
           .attr(
             "x2",
-            dimensions.width -
-              margin.right -
-              margin.left +
-              this.options.Y_TICK_GUTTER,
+            this.layout.innerWidth + this.options.Y_TICK_GUTTER,
           ),
       );
 

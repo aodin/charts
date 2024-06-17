@@ -5,24 +5,24 @@ import * as d3 from "d3";
 
 import { Chart } from "./chart";
 import { throttle } from "./throttle";
+import { screenBasedLayout } from "./layout";
 
 export class Line extends Chart {
   render(elem) {
     // If there is no data, do not render
     if (!this.X.length) return;
 
-    // Determine the size of the DOM element
-    const [width, height] = this.getDimensions(elem);
-    const dimensions = { width, height };
-    const margin = this.getMargin(width, height);
+    // Determine the layout
+    this.layout = this.getLayout(elem);
+    this.layout.padding = this.getPadding(this.layout);
 
-    this.createSVG(elem, dimensions);
+    this.createSVG(elem, this.layout);
 
     // X-axis
     this.xScale = d3
       .scaleUtc()
       .domain(this.getDomainX())
-      .range(this.getRangeX(dimensions, margin));
+      .range(this.getRangeX(this.layout));
 
     let xAxis = d3
       .axisBottom(this.xScale)
@@ -35,7 +35,7 @@ export class Line extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(0,${dimensions.height - margin.bottom + this.options.Y_TICK_GUTTER})`,
+        `translate(0,${this.layout.height - this.layout.padding.bottom + this.options.Y_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
@@ -44,7 +44,7 @@ export class Line extends Chart {
     this.yScale = d3
       .scaleLinear()
       .domain(this.getDomainY())
-      .range(this.getRangeY(dimensions, margin));
+      .range(this.getRangeY(this.layout));
 
     let yAxis = d3
       .axisLeft(this.yScale)
@@ -59,7 +59,7 @@ export class Line extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${margin.left - this.options.X_TICK_GUTTER},0)`,
+        `translate(${this.layout.padding.left - this.options.X_TICK_GUTTER},0)`,
       )
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
@@ -70,7 +70,7 @@ export class Line extends Chart {
           .attr("stroke", "#888") // Works for black or white background at 40% opacity
           .attr("stroke-opacity", 0.4)
           .attr("transform", `translate(${this.options.X_TICK_GUTTER},0)`)
-          .attr("x2", dimensions.width - margin.left - margin.right),
+          .attr("x2", this.layout.innerWidth),
       );
 
     // Plot the line

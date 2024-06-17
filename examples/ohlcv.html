@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <title>@aodin/charts - OHLCV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style type="text/css">
 body {
   font-family: sans-serif;
@@ -21,8 +23,19 @@ body {
   margin-bottom: 5px;
 }
 #hud div {
-  font-size: .9rem;
-  height: 22px;
+  height: 20px;
+}
+@media (max-width: 600px) {
+  #title h1 {
+    font-size: 24px;
+    margin: 10px;
+  }
+  text {
+    font-size: 10px !important;
+  }
+  #hud {
+    font-size: 10px !important;
+  }
 }
     </style>
   </head>
@@ -80,7 +93,13 @@ const percent = new Intl.NumberFormat('en-US', {
 const hud = document.querySelector("#hud");
 let hudTemplate = document.querySelector('#hudTemplate');
 
+const ohlcv = new charts.OHLCV(
+  data,
+  {Y_TICK_MAX_COUNT: 6, X_TICK_MAX_COUNT: 10, X_TICK_SPACE: 100},
+);
+
 function onMove(data) {
+  ohlcv.highlight(data.i);
   if (typeof data.delta !== 'undefined' && data.delta !== null ) {
     let clone = hudTemplate.content.cloneNode(true);
     clone.querySelector(".date").innerHTML = data.x.toISOString().substring(0, 10);
@@ -95,9 +114,9 @@ function onMove(data) {
 
 function onLeave() {
   hud.innerHTML = "";
+  ohlcv.noHighlight();
 }
 
-const ohlcv = new charts.OHLCV(data, {FONT_SIZE: "12px"});
 ohlcv.render("#chart");
 ohlcv.enableHover(onMove, onLeave);
     </script>

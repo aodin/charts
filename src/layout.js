@@ -1,5 +1,63 @@
 import * as d3 from "d3";
 
+/*
+Most of the layout operations are placing a rectangle within another rectangle.
+What is the most generic way to do this?
+*/
+
+export class Padding {
+  constructor(top, right, bottom, left) {
+    this.top = top;
+    this.right = right;
+    this.bottom = bottom;
+    this.left = left;
+  }
+}
+
+export class Layout {
+  constructor(width, height, padding) {
+    this.width = width;
+    this.height = height;
+    this.padding = padding;
+  }
+
+  get rangeX() {
+    return [this.padding.left, this.width - this.padding.right];
+  }
+
+  get rangeY() {
+    return [this.height - this.padding.bottom, this.padding.top];
+  }
+
+  get innerWidth() {
+    return this.width - this.padding.left - this.padding.right;
+  }
+
+  get innerHeight() {
+    return this.height - this.padding.top - this.padding.bottom;
+  }
+}
+
+export function screenBasedLayout() {
+  return new Layout(window.innerWidth, window.innerHeight, new Padding(15, 15, 15, 15));
+}
+
+export function elementBaseLayout(
+  elem,
+  { minWidth = 400, maxWidth = undefined, minHeight = 300, maxHeight = undefined } = {},
+) {
+  const chart = document.querySelector(elem);
+  let width = d3.max([chart.offsetWidth, minWidth]);
+  if (maxWidth) {
+    width = d3.min([width, maxWidth]);
+  }
+  let height = d3.max([chart.offsetHeight, minHeight]);
+  if (maxheight) {
+    height = d3.min([height, maxHeight]);
+  }
+  return new Layout(width, height, new Padding(15, 15, 15, 25));
+}
+
 export function getDimensions(
   elem,
   { ratio = 0.2, maxWidth = 1600, minWidth = 400, minHeight = 300 } = {},
@@ -43,6 +101,9 @@ export function maxTickWidth(defaults, height, domain, format, options) {
       width = bbox.width;
     }
   });
+
+  // Remove the axis
+  hidden.remove();
 
   // Add some padding
   return width + options.X_TICK_GUTTER + 5;

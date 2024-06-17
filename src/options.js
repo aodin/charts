@@ -3,9 +3,14 @@ import * as d3 from "d3";
 export class Options {
   constructor(options = {}) {
     this.ANIMATION_DURATION_MS = 500;
-    // TODO Allow either number of x-ticks OR minimum x tick spacing
+
+    // Allow either max number of ticks OR spacing
+    this.X_TICK_MAX_COUNT = null;
+    this.X_TICK_SPACE = 50; // TODO calculate largest tick space dynamically
     this.X_TICK_SIZE = 4;
     this.X_TICK_GUTTER = 3;
+    this.Y_TICK_MAX_COUNT = null;
+    this.Y_TICK_SPACE = 40;
     this.Y_TICK_SIZE = 0;
     this.Y_TICK_GUTTER = 5; // Space between tick label and grid
     this.FONT_SIZE = "13px";
@@ -34,5 +39,21 @@ export class Options {
 
   get eventLatency() {
     return parseInt(1000 / this.EVENT_FPS);
+  }
+
+  getYTickCount(height) {
+    let count = parseInt(height / this.Y_TICK_SPACE) + 1;
+    if (this.Y_TICK_MAX_COUNT && count > this.Y_TICK_MAX_COUNT) {
+      count = this.Y_TICK_MAX_COUNT;
+    }
+    return count;
+  }
+
+  getXTickCount(width) {
+    let count = parseInt(width / this.X_TICK_SPACE) + 1;
+    if (this.X_TICK_MAX_COUNT && count > this.X_TICK_MAX_COUNT) {
+      count = this.X_TICK_MAX_COUNT;
+    }
+    return count;
   }
 }

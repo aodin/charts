@@ -3,7 +3,7 @@ OHLCV chart
 */
 import * as d3 from "d3";
 
-import { maxTickWidth } from "./layout";
+import { maxTickWidth, Padding } from "./layout";
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
@@ -20,32 +20,27 @@ export class OHLCV extends Chart {
     this.I = d3.range(this.X.length);
   }
 
-  getMargin(width, height) {
-    const margin = {
-      top: 15,
-      right: 25,
-      bottom: 25,
-      left: 40,
-    };
+  getPadding(layout) {
+    const padding = new Padding(15, 25, 25, 40);
 
-    // Adjust the left margin to accommodate the price ticks
-    margin.left = maxTickWidth(
-      margin,
-      height,
+    // Adjust the left padding to accommodate the price ticks
+    padding.left = maxTickWidth(
+      padding,
+      this.layout.height,
       this.getDomainY(),
       this.tickFormatY,
       this.options,
     );
 
-    // Adjust the right margin to accommodate the volume tick
-    margin.right = maxTickWidth(
-      margin,
-      height,
+    // Adjust the right padding to accommodate the volume tick
+    padding.right = maxTickWidth(
+      padding,
+      this.layout.height,
       this.yDomainVolume,
       volume,
       this.options,
     );
-    return margin;
+    return padding;
   }
 
   getDomainX() {
@@ -73,26 +68,27 @@ export class OHLCV extends Chart {
 
   render(elem) {
     // Determine the size of the DOM element
-    const [width, height] = this.getDimensions(elem);
-    const dimensions = { width, height };
-    const margin = this.getMargin(width, height);
+    this.layout = this.getLayout(elem);
+    this.layout.padding = this.getPadding(this.layout);
 
-    // TODO How to generalize different chart sections? sub-axes?
-    const chartHeight = height - margin.top - margin.bottom;
-    this.chartHeight = chartHeight;
     const pricePortion = 0.9;
-    const priceHeight = chartHeight * pricePortion;
+    const priceHeight = this.layout.innerHeight * pricePortion;
 
-    const yRange = [margin.top + priceHeight, margin.top];
-    const yRangeVolume = [margin.top + chartHeight, margin.top + priceHeight];
+    const yRange = [this.layout.padding.top + priceHeight, this.layout.padding.top];
+    const yRangeVolume = [
+      this.layout.padding.top + this.layout.innerHeight,
+      this.layout.padding.top + priceHeight,
+    ];
 
-    const yFormat = ",f";
     const yLabel = "";
 
     // NOTE If dates are missing, we can't use the timeWeek ranges without
     // checking if the tick has values
-    // TODO Number of x-ticks, number of y-ticks - function of width?
-    let interval = parseInt(this.X.length / 10);
+    const xRange = this.getRangeX(this.layout);
+    const axisWidth = xRange[1] - xRange[0];
+    const xTickCount = this.options.getXTickCount(axisWidth);
+
+    let interval = parseInt(this.X.length / xTickCount);
     if (interval < 1) {
       interval = 1;
     }
@@ -103,7 +99,7 @@ export class OHLCV extends Chart {
     // NOTE scaleBand takes all 'categorical' x-axis items - not just extent
     // TODO Play further with padding and align
     this.xScale = d3
-      .scaleBand(this.X, this.getRangeX(dimensions, margin))
+      .scaleBand(this.X, xRange)
       .padding(this.options.BAND_PADDING)
       .align(0.1);
     const yScale = d3.scaleLinear(this.getDomainY(), yRange);
@@ -125,7 +121,7 @@ export class OHLCV extends Chart {
     // TODO Set number of ticks
     const yAxis = d3
       .axisLeft(yScale)
-      .ticks(priceHeight / 40, yFormat)
+      .ticks(this.options.getYTickCount(priceHeight))
       .tickSize(this.options.Y_TICK_SIZE);
 
     const yAxisVolume = d3
@@ -135,7 +131,7 @@ export class OHLCV extends Chart {
       .tickSize(3);
 
     // Create SVG
-    this.createSVG(elem, dimensions);
+    this.createSVG(elem, this.layout);
 
     const bandPadding = (this.bandWidth * this.options.BAND_PADDING) / 2;
 
@@ -145,7 +141,7 @@ export class OHLCV extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${bandPadding},${height - margin.bottom + this.options.X_TICK_GUTTER})`,
+        `translate(${bandPadding},${this.layout.height - this.layout.padding.bottom + this.options.X_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
@@ -156,7 +152,7 @@ export class OHLCV extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${margin.left - this.options.Y_TICK_GUTTER},0)`,
+        `translate(${this.layout.padding.left - this.options.Y_TICK_GUTTER},0)`,
       )
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
@@ -169,13 +165,13 @@ export class OHLCV extends Chart {
           .attr("x1", this.options.Y_TICK_GUTTER)
           .attr(
             "x2",
-            width + this.options.Y_TICK_GUTTER - margin.left - margin.right,
+            this.layout.width + this.options.Y_TICK_GUTTER - this.layout.padding.left - this.layout.padding.right,
           ),
       )
       .call((g) =>
         g
           .append("text")
-          .attr("x", -margin.left)
+          .attr("x", -this.layout.padding.left)
           .attr("y", 10)
           .attr("fill", "currentColor")
           .attr("text-anchor", "start")
@@ -186,13 +182,13 @@ export class OHLCV extends Chart {
     this.svg
       .append("g")
       .style("font-size", this.options.FONT_SIZE)
-      .attr("transform", `translate(${width - margin.right},0)`)
+      .attr("transform", `translate(${this.layout.width - this.layout.padding.right},0)`)
       .call(yAxisVolume)
       .call((g) => g.select(".domain").remove())
       .call((g) =>
         g
           .append("text")
-          .attr("x", -margin.left)
+          .attr("x", -this.layout.padding.left)
           .attr("fill", "currentColor")
           .attr("text-anchor", "start")
           .text(yLabel),
@@ -255,6 +251,30 @@ export class OHLCV extends Chart {
       .transition()
       .duration(this.options.ANIMATION_DURATION_MS)
       .attr("y2", (i) => yScaleVolume(this.Yv[i]));
+
+    // Optional tooltip / highlighting of day
+    // TODO Give the tooltip a class
+    this.tooltip = this.svg.append('g').lower()
+      .attr("class", "tooltip")
+      .append('rect')
+      .attr('fill', '#bbb')
+      .style('display', 'none')
+      .style('opacity', 0.2)
+      .style('pointer-events', 'none');
+  }
+
+  highlight(index) {
+    // Update tooltip
+    this.tooltip
+      .attr('x', this.xScale(this.X[index]))
+      .attr('width', this.bandWidth)
+      .attr('y', this.layout.padding.top)
+      .attr('height', this.layout.innerHeight)
+      .style('display', 'block');
+  }
+
+  noHighlight() {
+    this.tooltip.style('display', 'none');
   }
 
   enableHover(move, leave) {
@@ -283,6 +303,7 @@ export class OHLCV extends Chart {
 
       // Include the index's OHLCV data and a change from the last close
       let data = {
+        i: index,
         x: this.X[index],
         o: this.Yo[index],
         h: this.Yh[index],

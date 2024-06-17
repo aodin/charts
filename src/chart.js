@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 
 import { Options } from "./options";
-import { getDimensions } from "./layout";
+import { screenBasedLayout, Padding } from "./layout";
 
 export class Chart {
   // By default, tick format functions are null, which will use the default D3
@@ -15,13 +15,8 @@ export class Chart {
     this.parse(data);
   }
 
-  getMargin(width, height) {
-    return {
-      top: 15,
-      right: 15,
-      bottom: 25,
-      left: 45,
-    };
+  getPadding(layout) {
+    return new Padding(15, 15, 15, 30);
   }
 
   getTickValuesX() {
@@ -87,16 +82,16 @@ export class Chart {
     return d3.extent(this.X);
   }
 
-  getRangeX(dimensions, margin) {
-    return [margin.left, dimensions.width - margin.right];
+  getRangeX(layout) {
+    return layout.rangeX;
   }
 
   getDomainY() {
     return d3.extent(this.Y);
   }
 
-  getRangeY(dimensions, margin) {
-    return [dimensions.height - margin.bottom, margin.top];
+  getRangeY(layout) {
+    return layout.rangeY;
   }
 
   setColors(data) {
@@ -110,12 +105,15 @@ export class Chart {
     return this.colors(z);
   }
 
-  getDimensions(elem) {
-    // Given the chart's DOM element, return the desired width and height for drawing
-    return getDimensions(elem, { ratio: 0.35 });
+  getLayout(elem) {
+    // Given the chart's DOM element, return the desired layout for drawing
+    const layout = screenBasedLayout();
+    // Set height to 70% of available
+    layout.height = parseInt(layout.height * 0.7);
+    return layout;
   }
 
-  createSVG(elem, dimensions) {
+  createSVG(elem, layout) {
     // Clear any existing chart
     d3.select(elem).selectAll("svg").remove();
 
@@ -123,7 +121,7 @@ export class Chart {
     this.svg = d3
       .select(elem)
       .append("svg")
-      .attr("viewBox", [0, 0, dimensions.width, dimensions.height])
+      .attr("viewBox", [0, 0, layout.width, layout.height])
       .attr("style", "max-width: 100%; height: intrinsic;")
       .style("-webkit-tap-highlight-color", "transparent")
       .style("font-size", this.options.FONT_SIZE)

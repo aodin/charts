@@ -43,44 +43,45 @@ export class Area extends Chart {
   }
 
   render(elem) {
-    // Determine the size of the DOM element
-    const [width, height] = this.getDimensions(elem);
-    const dimensions = { width, height };
-    const margin = this.getMargin(width, height);
+    // Determine the layout
+    this.layout = this.getLayout(elem);
+    this.layout.padding = this.getPadding(this.layout);
 
-    this.createSVG(elem, dimensions);
+    this.createSVG(elem, this.layout);
 
     // Y-axis
     const yScale = d3
       .scaleLinear()
       .domain(this.getDomainY())
-      .range(this.getRangeY(dimensions, margin));
+      .range(this.getRangeY(this.layout));
 
     let yAxis = d3
       .axisLeft(yScale)
       .tickValues(this.getTickValuesY())
       .tickFormat(this.tickFormatY)
       .tickSize(0)
-      .ticks(8);
+      .ticks(this.options.getYTickCount(this.layout.innerHeight));
 
     // X-axis
     const xScale = d3
       .scaleUtc()
       .domain(this.getDomainX())
-      .range(this.getRangeX(dimensions, margin));
+      .range(this.getRangeX(this.layout));
 
     let xAxis = d3
       .axisBottom(xScale)
       .tickValues(this.getTickValuesX())
       .tickFormat(this.tickFormatX)
-      .tickSizeInner(this.options.X_TICK_SIZE);
+      .tickSizeInner(this.options.X_TICK_SIZE)
+
+    // TODO If a category, use the "interval" logic as the OHLCV x-axis
 
     this.svg
       .append("g")
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(0,${dimensions.height - margin.bottom + this.options.X_TICK_GUTTER})`,
+        `translate(0,${this.layout.height - this.layout.padding.bottom + this.options.X_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
@@ -90,7 +91,7 @@ export class Area extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${margin.left - this.options.Y_TICK_GUTTER},0)`,
+        `translate(${this.layout.padding.left - this.options.Y_TICK_GUTTER},0)`,
       )
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
@@ -101,13 +102,7 @@ export class Area extends Chart {
           .attr("stroke", "#888") // Works for black or white background at 40% opacity
           .attr("stroke-opacity", 0.4)
           .attr("x1", this.options.Y_TICK_GUTTER)
-          .attr(
-            "x2",
-            dimensions.width -
-              margin.right -
-              margin.left +
-              this.options.Y_TICK_GUTTER,
-          ),
+          .attr("x2", this.layout.innerWidth + this.options.Y_TICK_GUTTER),
       );
 
     // Construct an area
