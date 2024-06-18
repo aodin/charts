@@ -30,6 +30,13 @@ export class Options {
     // Bar
     this.BAR_STROKE_WIDTH = 0.0;
 
+    // Pie
+    this.INNER_RADIUS = 0.3;
+    this.OUTER_RADIUS = 0.8;
+
+    this.INNER_RADIUS_HOVER = 0.3;
+    this.OUTER_RADIUS_HOVER = 0.9;
+
     // TODO POINTER MOVE FPS
     this.EVENT_FPS = 48;
 

@@ -40,6 +40,21 @@ const data = [
 ];
 const pie = new charts.Pie(data, {COLORS: d3.schemeSet1});
 pie.render("#chart");
+// pie.highlight("C");
+// pie.noHighlight();
+
+function onEnter(data, evt, d) {
+  pie.enlarge(data.z);
+  pie.highlight(data.z);
+}
+function onLeave(data, evt, d) {
+  pie.reset();
+  pie.noHighlight();
+}
+pie.enableEvents(onEnter, onLeave);
+
+// pie.enlarge("C");
+
     </script>
   </body>
 </html>
