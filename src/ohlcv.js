@@ -123,6 +123,7 @@ export class OHLCV extends Chart {
     const yAxis = d3
       .axisLeft(yScale)
       .tickValues(this.getTickValuesY())
+      .tickFormat(this.tickFormatY)
       .tickSize(this.options.Y_TICK_SIZE);
 
     // TODO Tick count just hides tick labels
