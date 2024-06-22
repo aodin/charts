@@ -1,6 +1,6 @@
 {
   "name": "@aodin/charts",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Modular D3.js charts",
   "main": "./src/index.js",
   "directories": {
