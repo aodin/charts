@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 
 import { Options } from "./options";
-import { screenBasedLayout, Padding } from "./layout";
+import { getLayout, Padding } from "./layout";
 
 export class Chart {
   // By default, tick format functions are null, which will use the default D3
@@ -107,10 +107,7 @@ export class Chart {
 
   getLayout(elem) {
     // Given the chart's DOM element, return the desired layout for drawing
-    const layout = screenBasedLayout();
-    // Set height to 70% of available
-    layout.height = parseInt(layout.height * 0.7);
-    return layout;
+    return getLayout(elem);
   }
 
   createSVG(elem, layout) {

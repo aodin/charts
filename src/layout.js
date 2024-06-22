@@ -46,21 +46,14 @@ export class Layout {
   }
 }
 
-export function screenBasedLayout() {
-  return new Layout(
-    window.innerWidth,
-    window.innerHeight,
-    new Padding(15, 15, 15, 15),
-  );
-}
-
-export function elementBaseLayout(
+export function getLayout(
   elem,
   {
     minWidth = 400,
     maxWidth = undefined,
     minHeight = 300,
     maxHeight = undefined,
+    screenHeightFraction = 0.5,
   } = {},
 ) {
   const chart = document.querySelector(elem);
@@ -68,22 +61,13 @@ export function elementBaseLayout(
   if (maxWidth) {
     width = d3.min([width, maxWidth]);
   }
-  let height = d3.max([chart.offsetHeight, minHeight]);
-  if (maxheight) {
+
+  let height = window.innerHeight * screenHeightFraction;
+  height = d3.max([height, minHeight]);
+  if (maxHeight) {
     height = d3.min([height, maxHeight]);
   }
-  return new Layout(width, height, new Padding(15, 15, 15, 25));
-}
-
-export function getDimensions(
-  elem,
-  { ratio = 0.2, maxWidth = 1600, minWidth = 400, minHeight = 300 } = {},
-) {
-  const chart = document.querySelector(elem);
-  let width = d3.min([chart.offsetWidth, maxWidth]);
-  width = d3.max([chart.offsetWidth, minWidth]);
-  let height = d3.max([parseInt(ratio * width), minHeight]);
-  return [width, height];
+  return new Layout(width, height, new Padding(15, 15, 25, 25));
 }
 
 export function maxTickWidth(defaults, height, domain, format, options) {

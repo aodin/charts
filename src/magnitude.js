@@ -1,17 +1,15 @@
-function applyMagnitude(Y) {
-  let yLabel = "";
-  const lowerBound = d3.quantile(Y, 0.1);
-  if (lowerBound > 0) {
-    const digits = parseInt(Math.floor(Math.log10(lowerBound) / 3.0));
-    if (digits > 1 && digits < 4) {
-      // TODO Don't use yet
-      // magnitude = Math.pow(10, digits * 3);
-      // yLabel = digits == 2 ? "Millions" : "Billions";
-    }
-  }
+import * as d3 from "d3";
 
-  if (magnitude != 1.0) {
-    Y = Y.map((d) => d / magnitude);
+export function lowerBoundDigits(values, bound = 0.1) {
+  // Determine how many significant digits should be used to represent the lower
+  // bound of values
+  if (!values || !values.length) {
+    return null;
   }
-  return Y;
+  // Only works for positive values
+  const lowerBound = d3.quantile(values, bound);
+  if (lowerBound > 0) {
+    return parseInt(Math.floor(Math.log10(lowerBound)));
+  }
+  return null;
 }

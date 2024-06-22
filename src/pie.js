@@ -79,6 +79,7 @@ export class Pie extends Chart {
     this.slice
       .append("path")
       .attr("d", this.arc)
+      .attr("opacity", 1.0)
       .attr("fill", (d, i) => this.getColor(this.getZ(d.data)));
 
     // Label
@@ -120,6 +121,7 @@ export class Pie extends Chart {
 
   highlight(z) {
     this.slice
+      .attr("opacity", 1.0)
       .transition()
       .duration(this.options.ANIMATION_DURATION_MS)
       .attr("opacity", (d) => (this.getZ(d.data) === z ? 1.0 : 0.5));
