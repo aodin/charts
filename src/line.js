@@ -143,7 +143,7 @@ export class Line extends Chart {
         Math.hypot(this.xScale(this.X[i]) - xm, this.yScale(this.Y[i]) - ym),
       );
 
-      // Do not place a tooltip if no point was found
+      // Exit early if no point was found
       if (typeof index === "undefined") return;
 
       // Only trigger the callback when the index changes

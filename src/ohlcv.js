@@ -117,7 +117,7 @@ export class OHLCV extends Chart {
       .tickValues(this.getXTicks())
       .tickSize(this.options.X_TICK_SIZE);
 
-    // The band width will be used for correctly positioning the tooltip
+    // The band width will be used for correctly positioning the band highlighting
     this.bandWidth = this.xScale.step();
 
     const yAxis = d3
@@ -240,12 +240,12 @@ export class OHLCV extends Chart {
       .duration(this.options.ANIMATION_DURATION_MS)
       .attr("y2", (i) => yScaleVolume(this.Yv[i]));
 
-    // Optional tooltip / highlighting of day
-    // TODO Give the tooltip a class
-    this.tooltip = this.svg
+    // Optional highlighting of day
+    // Don't call the class "tooltip" - that interferes with Bootstrap
+    this.highlightBand = this.svg
       .append("g")
       .lower()
-      .attr("class", "tooltip")
+      .attr("class", "highlight")
       .append("rect")
       .attr("fill", "#bbb")
       .style("display", "none")
@@ -254,8 +254,7 @@ export class OHLCV extends Chart {
   }
 
   highlight(index) {
-    // Update tooltip
-    this.tooltip
+    this.highlightBand
       .attr("x", this.xScale(this.X[index]))
       .attr("width", this.bandWidth)
       .attr("y", this.layout.padding.top)
@@ -264,7 +263,7 @@ export class OHLCV extends Chart {
   }
 
   noHighlight() {
-    this.tooltip.style("display", "none");
+    this.highlightBand.style("display", "none");
   }
 
   enableHover(move, leave) {
