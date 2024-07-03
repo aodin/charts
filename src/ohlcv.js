@@ -199,7 +199,6 @@ export class CandlestickChart extends Chart {
     const gridX2 = this.options.Y_TICKS_RIGHT
       ? -this.layout.innerWidth
       : this.layout.innerWidth + this.options.Y_TICK_GUTTER;
-    // TODO Fix grid translate
 
     this.svg
       .append("g")
@@ -288,7 +287,7 @@ export class CandlestickChart extends Chart {
         .style("opacity", this.options.VOLUME_OPACITY)
         .transition()
         .duration(this.options.ANIMATION_DURATION_MS)
-        .attr("y2", (i) => yScaleVolume(this.Yv[i]));
+        .attr("y2", (i) => yScaleVolume(this.Yv[i] ? this.Yv[i] : 0));
     }
 
     // Optional highlighting of day
