@@ -12,9 +12,9 @@ npm i @aodin/charts
 Chart are designed as extensible classes with basic defaults. Extend the existing classes to alter behaviors.
 
 ```js
-import { Line } from "@aodin/charts";
+import { LineChart } from "@aodin/charts";
 
-export class Example extends Line {
+export class Example extends LineChart {
   // Parse an array of objects from the values property instead of an array of arrays
   parseX(data) {
     return d3.map(data.values, (d) => d3.isoParse(d.x));
@@ -33,7 +33,7 @@ export class Example extends Line {
 There are also pre-built files in `/dist/`. These charts expect an array of arrays as the data parameter, e.g. `[[x, y, z]...]`. They can be called with:
 
 ```js
-(new charts.Line(data)).render("#element");
+charts.Line(data).render("#element");
 ```
 
 See [examples](/examples) for example line, area, bar, pie, and OHLCV candlestick charts.
