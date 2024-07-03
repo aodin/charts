@@ -377,14 +377,16 @@ export class CandlestickChart extends Chart {
       }
     };
 
-    this.svg.on(
-      "pointermove",
-      throttle(pointermove, this.options.eventLatency),
-    );
+    const pointerleave = (evt) => {
+      prevIndex = null;
+      if (leave) {
+        leave.call(this);
+      }
+    };
 
-    if (leave) {
-      this.svg.on("pointerleave", leave);
-    }
+    this.svg
+      .on("pointermove", throttle(pointermove, this.options.eventLatency))
+      .on("pointerleave", pointerleave);
   }
 }
 
