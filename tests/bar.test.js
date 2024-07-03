@@ -15,7 +15,7 @@ describe("Bar", () => {
   });
 
   it("should be rendered on the DOM", () => {
-    const bar = new Bar(monthly);
+    const bar = Bar(monthly);
     bar.render("#chart");
     expect(bar.X.length).toBe(6); // For bar charts, X will only be unique X values
   });

@@ -88,15 +88,15 @@ const percent = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
   signDisplay: 'exceptZero',
-});
+}).format;
 
 const hud = document.querySelector("#hud");
 let hudTemplate = document.querySelector('#hudTemplate');
 
-const ohlcv = new charts.OHLCV(
+const ohlcv = charts.OHLCV(
   data,
-  {Y_TICK_MAX_COUNT: 6, X_TICK_MAX_COUNT: 10, X_TICK_SPACE: 100, ANIMATION_DURATION_MS: 0},
-);
+  {Y_TICK_MAX_COUNT: 6, X_TICK_MAX_COUNT: 10, X_TICK_SPACE: 100},
+).noAnimation().hideVolumeTicks().volumeColorSet(["#444", "#444", "#444"]).yTicksRight();
 
 function onMove(data) {
   ohlcv.highlight(data.i);
@@ -104,7 +104,7 @@ function onMove(data) {
     let clone = hudTemplate.content.cloneNode(true);
     clone.querySelector(".date").innerHTML = data.x.toISOString().substring(0, 10);
     clone.querySelector(".symbol").innerHTML = data.delta >= 0 ? GAIN : LOSS;
-    clone.querySelector(".delta").textContent = percent.format(data.percent);
+    clone.querySelector(".delta").textContent = percent(data.percent);
     clone.querySelector("div").style.color = data.color;
     hud.replaceChildren(clone);
   } else {
@@ -117,7 +117,7 @@ function onLeave() {
   ohlcv.noHighlight();
 }
 
-ohlcv.render("#chart", true);
+ohlcv.renderLog("#chart");
 ohlcv.enableHover(onMove, onLeave);
     </script>
   </body>

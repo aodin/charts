@@ -2,10 +2,10 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { Area } from "../src/area";
+import { Pie } from "../src/pie";
 import { monthly } from "./data";
 
-describe("Area", () => {
+describe("Pie", () => {
   beforeEach(() => {
     global.window = new Window();
     global.window.document.write(
@@ -15,9 +15,9 @@ describe("Area", () => {
   });
 
   it("should be rendered on the DOM", () => {
-    const area = Area(monthly, { FONT_SIZE: "20px" });
+    const area = Pie(monthly);
     area.render("#chart");
-    expect(area.X.length).toBe(6); // For area charts, X will only be unique X values
+    expect(area.Y.length).toBe(monthly.length);
   });
 
   afterEach(() => {

@@ -15,7 +15,7 @@ describe("Line", () => {
   });
 
   it("should be rendered on the DOM", () => {
-    const line = new Line(monthly);
+    const line = Line(monthly);
     line.render("#chart");
     line.enableHover(
       (d) => line.highlight(d.z),

@@ -6,7 +6,7 @@ import * as d3 from "d3";
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 
-export class Bar extends Chart {
+export class BarChart extends Chart {
   parse(data) {
     // Get distinct items from the list of Z values
     this.Z = this.parseZ(data);
@@ -33,6 +33,16 @@ export class Bar extends Chart {
     this.Y = [0, d3.max(this.stack[this.stack.length - 1], (d) => d[1])];
 
     this.setColors(data);
+  }
+
+  barStrokeWidth(width) {
+    this.options.BAR_STROKE_WIDTH = width;
+    return this;
+  }
+
+  bandPadding(value) {
+    this.options.BAND_PADDING = value;
+    return this;
   }
 
   // Since the X data is categorical, return all unique values
@@ -130,4 +140,8 @@ export class Bar extends Chart {
       .attr("height", (d) => yScale(d[0]) - yScale(d[1]))
       .attr("width", xScale.bandwidth());
   }
+}
+
+export function Bar(data, options) {
+  return new BarChart(data, options);
 }

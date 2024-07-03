@@ -9,7 +9,7 @@ import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
 import { volume } from "./formats";
 
-export class OHLCV extends Chart {
+export class CandlestickChart extends Chart {
   parse(data) {
     this.X = d3.map(data, (d) => d3.isoParse(d[0]));
     this.Yo = d3.map(data, (d) => d[1]);
@@ -23,8 +23,8 @@ export class OHLCV extends Chart {
   getPadding(layout) {
     const padding = new Padding(15, 25, 25, 40);
 
-    // Adjust the left padding to accommodate the price ticks
-    padding.left = maxTickWidth(
+    // Adjust the padding to accommodate the price ticks
+    const priceWidth = maxTickWidth(
       padding,
       this.layout.height,
       this.getDomainY(),
@@ -32,15 +32,46 @@ export class OHLCV extends Chart {
       this.options,
     );
 
-    // Adjust the right padding to accommodate the volume tick
-    padding.right = maxTickWidth(
-      padding,
-      this.layout.height,
-      this.yDomainVolume,
-      volume,
-      this.options,
-    );
+    // Adjust the padding to accommodate the volume tick
+    let volumeWidth = 0;
+
+    if (this.options.showVolumeTicks) {
+      volumeWidth = maxTickWidth(
+        padding,
+        this.layout.height,
+        this.yDomainVolume,
+        volume,
+        this.options,
+      );
+    }
+
+    if (this.options.Y_TICKS_RIGHT) {
+      padding.right = d3.max([priceWidth, volumeWidth, padding.right]);
+    } else {
+      padding.left = d3.max([priceWidth, padding.left]);
+      padding.right = d3.max([volumeWidth, padding.right]);
+    }
     return padding;
+  }
+
+  noAnimation() {
+    this.options.ANIMATION_DURATION_MS = 0;
+    return this;
+  }
+
+  volumeColorSet(colors) {
+    this.options.VOLUME_COLORS = colors;
+    return this;
+  }
+
+  hideVolume() {
+    this.options.HIDE_VOLUME = true;
+    return this;
+  }
+
+  hideVolumeTicks() {
+    this.options.HIDE_VOLUME_TICKS = true;
+    return this;
   }
 
   getDomainX() {
@@ -48,9 +79,9 @@ export class OHLCV extends Chart {
   }
 
   getDomainY() {
-    // TODO How to pad?
-    // TODO How to set multiple domains? Data object
-    this.minPrice = d3.min(this.Yl); // Sets the initial animation y-coord
+    // NOTE this won't work if the minimum isn't in the Yl data
+    // minPrice also sets the initial animation y-coord
+    this.minPrice = this.options.MIN_Y_AT_ZERO ? 0 : d3.min(this.Yl);
     const maxPrice = d3.max(this.Yh);
     this.yDomain = [
       this.minPrice,
@@ -62,6 +93,12 @@ export class OHLCV extends Chart {
 
   getColor(index) {
     return this.options.OHLC_COLORS[
+      1 + Math.sign(this.Yo[index] - this.Yc[index])
+    ];
+  }
+
+  getVolumeColor(index) {
+    return this.options.VOLUME_COLORS[
       1 + Math.sign(this.Yo[index] - this.Yc[index])
     ];
   }
@@ -83,7 +120,7 @@ export class OHLCV extends Chart {
     this.layout = this.getLayout(elem);
     this.layout.padding = this.getPadding(this.layout);
 
-    const pricePortion = 0.9;
+    const pricePortion = this.options.HIDE_VOLUME ? 1.0 : 0.9;
     const priceHeight = this.layout.innerHeight * pricePortion;
 
     const yRange = [
@@ -120,8 +157,11 @@ export class OHLCV extends Chart {
     // The band width will be used for correctly positioning the band highlighting
     this.bandWidth = this.xScale.step();
 
-    const yAxis = d3
-      .axisLeft(yScale)
+    const yAxis = this.options.Y_TICKS_RIGHT
+      ? d3.axisRight(yScale)
+      : d3.axisLeft(yScale);
+
+    yAxis
       .tickValues(this.getTickValuesY())
       .tickFormat(this.tickFormatY)
       .tickSize(this.options.Y_TICK_SIZE);
@@ -152,13 +192,21 @@ export class OHLCV extends Chart {
       .call((g) => g.select(".domain").remove());
 
     // Price y-axis
+    const translateY = this.options.Y_TICKS_RIGHT
+      ? this.layout.width - this.layout.padding.right
+      : this.layout.padding.left - this.options.Y_TICK_GUTTER;
+    const gridX1 = this.options.Y_TICKS_RIGHT
+      ? -this.options.Y_TICK_GUTTER
+      : this.options.Y_TICK_GUTTER;
+    const gridX2 = this.options.Y_TICKS_RIGHT
+      ? -this.layout.innerWidth
+      : this.layout.innerWidth + this.options.Y_TICK_GUTTER;
+    // TODO Fix grid translate
+
     this.svg
       .append("g")
       .style("font-size", this.options.FONT_SIZE)
-      .attr(
-        "transform",
-        `translate(${this.layout.padding.left - this.options.Y_TICK_GUTTER},0)`,
-      )
+      .attr("transform", `translate(${translateY},0)`)
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
       .call((g) =>
@@ -167,20 +215,22 @@ export class OHLCV extends Chart {
           .clone()
           .attr("stroke", "#bbb") // Works for black or white background at 50% opacity
           .attr("stroke-opacity", 0.5)
-          .attr("x1", this.options.Y_TICK_GUTTER)
-          .attr("x2", this.layout.innerWidth + this.options.Y_TICK_GUTTER),
+          .attr("x1", gridX1)
+          .attr("x2", gridX2),
       );
 
     // Volume y-axis
-    this.svg
-      .append("g")
-      .style("font-size", this.options.FONT_SIZE)
-      .attr(
-        "transform",
-        `translate(${this.layout.width - this.layout.padding.right},0)`,
-      )
-      .call(yAxisVolume)
-      .call((g) => g.select(".domain").remove());
+    if (this.options.showVolumeTicks) {
+      this.svg
+        .append("g")
+        .style("font-size", this.options.FONT_SIZE)
+        .attr(
+          "transform",
+          `translate(${this.layout.width - this.layout.padding.right},0)`,
+        )
+        .call(yAxisVolume)
+        .call((g) => g.select(".domain").remove());
+    }
 
     // Plot OHLC candle sticks
     const g = this.svg
@@ -217,28 +267,31 @@ export class OHLCV extends Chart {
       .attr("y2", (i) => yScale(this.Yc[i]));
 
     // Plot volume
-    const vol = this.svg
-      .append("g")
-      .attr("stroke", "currentColor")
-      .attr("stroke-linecap", "butt") // NOTE using 'square' distorts length
-      .selectAll("g")
-      .data(this.I)
-      .join("g")
-      .attr(
-        "transform",
-        (i) => `translate(${this.xScale(this.X[i]) + this.bandWidth / 2.0},0)`,
-      );
+    if (!this.options.HIDE_VOLUME) {
+      const vol = this.svg
+        .append("g")
+        .attr("stroke", "currentColor")
+        .attr("stroke-linecap", "butt") // NOTE using 'square' distorts length
+        .selectAll("g")
+        .data(this.I)
+        .join("g")
+        .attr(
+          "transform",
+          (i) =>
+            `translate(${this.xScale(this.X[i]) + this.bandWidth / 2.0},0)`,
+        );
 
-    vol
-      .append("line")
-      .attr("y1", yScaleVolume(0))
-      .attr("y2", yScaleVolume(0))
-      .attr("stroke-width", this.xScale.bandwidth())
-      .attr("stroke", (i) => this.getColor(i))
-      .style("opacity", this.options.VOLUME_OPACITY)
-      .transition()
-      .duration(this.options.ANIMATION_DURATION_MS)
-      .attr("y2", (i) => yScaleVolume(this.Yv[i]));
+      vol
+        .append("line")
+        .attr("y1", yScaleVolume(0))
+        .attr("y2", yScaleVolume(0))
+        .attr("stroke-width", this.xScale.bandwidth())
+        .attr("stroke", (i) => this.getVolumeColor(i))
+        .style("opacity", this.options.VOLUME_OPACITY)
+        .transition()
+        .duration(this.options.ANIMATION_DURATION_MS)
+        .attr("y2", (i) => yScaleVolume(this.Yv[i]));
+    }
 
     // Optional highlighting of day
     // Don't call the class "tooltip" - that interferes with Bootstrap
@@ -251,6 +304,16 @@ export class OHLCV extends Chart {
       .style("display", "none")
       .style("opacity", 0.2)
       .style("pointer-events", "none");
+  }
+
+  renderLog(elem) {
+    // Render the price portion of the chart with a log axis
+    return this.render(elem, true);
+  }
+
+  renderLinear(elem) {
+    // Render the price portion of the chart with a linear axis
+    return this.render(elem, false);
   }
 
   highlight(index) {
@@ -326,4 +389,12 @@ export class OHLCV extends Chart {
       this.svg.on("pointerleave", leave);
     }
   }
+}
+
+export function OHLC(data, options) {
+  return new CandlestickChart(data, options).hideVolume();
+}
+
+export function OHLCV(data, options) {
+  return new CandlestickChart(data, options);
 }

@@ -5,7 +5,7 @@ import * as d3 from "d3";
 
 import { Chart } from "./chart";
 
-export class Area extends Chart {
+export class AreaChart extends Chart {
   parse(data) {
     // Get distinct items from the list of Z values
     this.Z = this.parseZ(data);
@@ -121,4 +121,8 @@ export class Area extends Chart {
       .attr("fill", (d) => this.getColor(d.key))
       .attr("d", area);
   }
+}
+
+export function Area(data, options) {
+  return new AreaChart(data, options);
 }

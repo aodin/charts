@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 
 import { Options } from "./options";
-import { getLayout, Padding } from "./layout";
+import { getLayout, maxTickWidth } from "./layout";
 
 export class Chart {
   // By default, tick format functions are null, which will use the default D3
@@ -15,8 +15,26 @@ export class Chart {
     this.parse(data);
   }
 
-  getPadding(layout) {
-    return new Padding(15, 15, 15, 30);
+  minAtZero() {
+    this.options.MIN_Y_AT_ZERO = true;
+    return this;
+  }
+
+  colorSet(name) {
+    // TODO Discrete vs. continuous?
+    this.options.COLORS = name;
+    this.setColors();
+    return this;
+  }
+
+  yTicksRight() {
+    this.options.Y_TICKS_RIGHT = true;
+    return this;
+  }
+
+  yTickLimit(count) {
+    this.options.Y_TICK_MAX_COUNT = count;
+    return this;
   }
 
   getTickValuesX() {
@@ -87,6 +105,9 @@ export class Chart {
   }
 
   getDomainY() {
+    if (this.options.MIN_Y_AT_ZERO) {
+      return [0, d3.max(this.Y)];
+    }
     return d3.extent(this.Y);
   }
 
@@ -107,7 +128,26 @@ export class Chart {
 
   getLayout(elem) {
     // Given the chart's DOM element, return the desired layout for drawing
-    return getLayout(elem);
+    return getLayout(elem, {
+      screenHeightFraction: this.options.SCREEN_HEIGHT_FRACTION,
+    });
+  }
+
+  getPadding(layout) {
+    const width = maxTickWidth(
+      layout.padding,
+      layout.height,
+      this.getDomainY(),
+      this.tickFormatY,
+      this.options,
+    );
+
+    if (this.options.Y_TICKS_RIGHT) {
+      layout.padding.right = width;
+    } else {
+      layout.padding.left = width;
+    }
+    return layout.padding;
   }
 
   createSVG(elem, layout) {

@@ -5,6 +5,7 @@ export class Options {
     this.ANIMATION_DURATION_MS = 500;
 
     // Allow either max number of ticks OR spacing
+    this.SCREEN_HEIGHT_FRACTION = 0.65;
     this.X_TICK_MAX_COUNT = null;
     this.X_TICK_SPACE = 50; // TODO calculate largest tick space dynamically
     this.X_TICK_SIZE = 4;
@@ -15,11 +16,16 @@ export class Options {
     this.Y_TICK_GUTTER = 5; // Space between tick label and grid
     this.FONT_SIZE = "13px";
     this.COLORS = d3.schemeCategory10;
+    this.MIN_Y_AT_ZERO = false;
+    this.Y_TICKS_RIGHT = false;
 
     // OHLC
     this.BAND_PADDING = 0.2; // As a percentage of the band
     this.VOLUME_OPACITY = 0.6;
     this.OHLC_COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]
+    this.VOLUME_COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]
+    this.HIDE_VOLUME = false;
+    this.HIDE_VOLUME_TICKS = false;
 
     // Line
     this.STROKE_WIDTH = 1.5;
@@ -46,6 +52,10 @@ export class Options {
 
   get eventLatency() {
     return parseInt(1000 / this.EVENT_FPS);
+  }
+
+  get showVolumeTicks() {
+    return !(this.HIDE_VOLUME || this.HIDE_VOLUME_TICKS);
   }
 
   getYTickCount(height) {

@@ -6,7 +6,7 @@ import * as d3 from "d3";
 import { Chart } from "./chart";
 import { throttle } from "./throttle";
 
-export class Line extends Chart {
+export class LineChart extends Chart {
   render(elem) {
     // If there is no data, do not render
     if (!this.X.length) return;
@@ -186,4 +186,8 @@ export class Line extends Chart {
         evt.preventDefault();
       });
   }
+}
+
+export function Line(data, options) {
+  return new LineChart(data, options);
 }

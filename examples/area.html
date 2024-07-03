@@ -28,7 +28,7 @@ const data = [
   ["2020-05-01", 10, "C"],
   ["2020-06-01", 12, "C"],
 ];
-const area = new charts.Area(data, {FONT_SIZE: "15px"});
+const area = charts.Area(data).yTickLimit(6);
 area.render("#chart");
     </script>
   </body>

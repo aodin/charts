@@ -5,7 +5,21 @@ import * as d3 from "d3";
 
 import { Chart } from "./chart";
 
-export class Pie extends Chart {
+export class PieChart extends Chart {
+  radii(inner, outer) {
+    // Set radii
+    this.options.INNER_RADIUS = inner;
+    this.options.OUTER_RADIUS = outer;
+    return this;
+  }
+
+  hoverRadii(inner, outer) {
+    // Set radii on hover
+    this.options.INNER_RADIUS_HOVER = inner;
+    this.options.OUTER_RADIUS_HOVER = outer;
+    return this;
+  }
+
   get outerRadius() {
     return this.options.OUTER_RADIUS * (this.layout.innerMinimum / 2);
   }
@@ -156,4 +170,12 @@ export class Pie extends Chart {
       .on("pointerenter", pointerenter)
       .on("pointerleave", pointerleave);
   }
+}
+
+export function Donut(data, options) {
+  return new PieChart(data, options);
+}
+
+export function Pie(data, options) {
+  return new PieChart(data, options).radii(0, 0.8).hoverRadii(0, 0.9);
 }

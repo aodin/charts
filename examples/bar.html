@@ -9,6 +9,9 @@ body {
   color: white;
   background-color: black;
 }
+h1 {
+  font-weight: normal;
+}
 rect {
   stroke: black;
 }
@@ -45,8 +48,13 @@ const data = [
   ["2020-04-01", 30, "E"],
   ["2020-05-01", 30, "E"],
   ["2020-06-01", 32, "E"],
+  ["2020-03-01", 40, "F"],
+  ["2020-04-01", 30, "F"],
+  ["2020-05-01", 20, "F"],
+  ["2020-06-01", 10, "F"],
 ];
-(new charts.Bar(data, {COLORS: d3.schemeTableau10, BAR_STROKE_WIDTH: 0.5, Y_TICK_MAX_COUNT: 8})).render("#chart");
+
+charts.Bar(data).colorSet(d3.schemePaired).bandPadding(0.3).barStrokeWidth(0.0).yTickLimit(8).render("#chart");
     </script>
   </body>
 </html>
