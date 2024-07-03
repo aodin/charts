@@ -140,10 +140,12 @@ export class CandlestickChart extends Chart {
       .padding(this.options.BAND_PADDING)
       .align(0.1);
 
-    const yScale = useLog
-      ? d3.scaleLog(this.getDomainY(), yRange)
-      : d3.scaleLinear(this.getDomainY(), yRange);
-    const yScaleVolume = d3.scaleLinear(this.yDomainVolume, yRangeVolume);
+    let yScale = useLog
+      ? d3.scaleLog(this.getDomainY(), yRange).clamp(true)
+      : d3.scaleLinear(this.getDomainY(), yRange).clamp(true);
+    const yScaleVolume = d3
+      .scaleLinear(this.yDomainVolume, yRangeVolume)
+      .clamp(true);
 
     // NOTE The date formatter needs to be created because it uses a
     // closure to determine a new year
@@ -162,12 +164,8 @@ export class CandlestickChart extends Chart {
       : d3.axisLeft(yScale);
 
     yAxis
-      .tickValues(this.getTickValuesY())
-      .tickFormat(this.tickFormatY)
+      .ticks(this.options.getYTickCount(priceHeight), this.tickFormatY)
       .tickSize(this.options.Y_TICK_SIZE);
-
-    // TODO Tick count just hides tick labels
-    // .ticks(this.options.getYTickCount(priceHeight))
 
     const yAxisVolume = d3
       .axisRight(yScaleVolume)

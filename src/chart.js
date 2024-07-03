@@ -15,6 +15,11 @@ export class Chart {
     this.parse(data);
   }
 
+  screenHeightRatio(fraction) {
+    this.options.SCREEN_HEIGHT_FRACTION = fraction;
+    return this;
+  }
+
   minAtZero() {
     this.options.MIN_Y_AT_ZERO = true;
     return this;
