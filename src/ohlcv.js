@@ -1,5 +1,5 @@
 /*
-OHLCV chart
+Candlestick OHLCV chart
 */
 import * as d3 from "d3";
 
@@ -82,25 +82,21 @@ export class CandlestickChart extends Chart {
     // NOTE this won't work if the minimum isn't in the Yl data
     // minPrice also sets the initial animation y-coord
     this.minPrice = this.options.MIN_Y_AT_ZERO ? 0 : d3.min(this.Yl);
-    const maxPrice = d3.max(this.Yh);
-    this.yDomain = [
-      this.minPrice,
-      maxPrice + (maxPrice - this.minPrice) * 0.05,
-    ];
+    this.yDomain = [this.minPrice, d3.max(this.Yh)];
     this.yDomainVolume = [0, d3.max(this.Yv)];
     return this.yDomain;
   }
 
+  signOfIndex(index) {
+    return 1 + Math.sign(this.Yo[index] - this.Yc[index]);
+  }
+
   getColor(index) {
-    return this.options.OHLC_COLORS[
-      1 + Math.sign(this.Yo[index] - this.Yc[index])
-    ];
+    return this.options.OHLC_COLORS[this.signOfIndex(index)];
   }
 
   getVolumeColor(index) {
-    return this.options.VOLUME_COLORS[
-      1 + Math.sign(this.Yo[index] - this.Yc[index])
-    ];
+    return this.options.VOLUME_COLORS[this.signOfIndex(index)];
   }
 
   getXTicks() {
@@ -159,13 +155,19 @@ export class CandlestickChart extends Chart {
     // The band width will be used for correctly positioning the band highlighting
     this.bandWidth = this.xScale.step();
 
-    const yAxis = this.options.Y_TICKS_RIGHT
+    let yAxis = this.options.Y_TICKS_RIGHT
       ? d3.axisRight(yScale)
       : d3.axisLeft(yScale);
 
-    yAxis
-      .ticks(this.options.getYTickCount(priceHeight), this.tickFormatY)
-      .tickSize(this.options.Y_TICK_SIZE);
+    if (useLog) {
+      yAxis
+        .tickFormat(this.tickFormatY)
+        .tickSize(this.options.Y_TICK_SIZE);
+    } else {
+      yAxis
+        .ticks(this.options.getYTickCount(priceHeight), this.tickFormatY)
+        .tickSize(this.options.Y_TICK_SIZE);
+    }
 
     const yAxisVolume = d3
       .axisRight(yScaleVolume)

@@ -95,7 +95,7 @@ let hudTemplate = document.querySelector('#hudTemplate');
 
 const ohlcv = charts.OHLCV(
   data,
-  {Y_TICK_MAX_COUNT: 6, X_TICK_MAX_COUNT: 10, X_TICK_SPACE: 100},
+  {X_TICK_MAX_COUNT: 10, X_TICK_SPACE: 100},
 ).noAnimation().hideVolumeTicks().volumeColorSet(["#444", "#444", "#444"]).yTicksRight();
 
 function onMove(data) {
