@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Line Zoom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+body {
+  font-family: sans-serif;
+  color: white;
+  background-color: black;
+}
+#title {
+  display: flex;
+  flex: columns;
+  align-items: center;
+  justify-content: start;
+}
+#title h1 {
+  font-weight: normal;
+  margin: 10px 20px 10px;
+}
+#hud p {
+  margin-bottom: 5px;
+}
+#hud div {
+  height: 20px;
+}
+@media (max-width: 600px) {
+  #title h1 {
+    font-size: 24px;
+    margin: 10px;
+  }
+  text {
+    font-size: 10px !important;
+  }
+  #hud {
+    font-size: 10px !important;
+  }
+}
+
+#chart .domain {
+  display: none;
+}
+    </style>
+  </head>
+  <body>
+    <div id="title">
+      <h1>Bar</h1>
+      <button id="original">Original</button>
+      <button id="zoom">Zoom</button>
+    </div>
+    <div>
+      <svg id="chart" width="1000" height="400"></svg>
+    </div>
+    <div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="bar_zoom.js"></script>
+  </body>
+</html>
+
+
