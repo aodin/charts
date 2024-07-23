@@ -65,7 +65,7 @@ export function getLayout(
   } = {},
 ) {
   const chart = document.querySelector(elem);
-  console.log(chart.getBoundingClientRect())
+  console.log(chart.getBoundingClientRect());
   let width = d3.max([chart.offsetWidth, minWidth]);
   if (maxWidth) {
     width = d3.min([width, maxWidth]);

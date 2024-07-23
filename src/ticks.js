@@ -6,10 +6,9 @@ To filter categorical x ticks, we need to:
 4. filter the available tick labels by the interval
 */
 
-
-export function maxLabelSize(layout, scale, format=null) {
+export function maxLabelSize(layout, scale, format = null) {
   // Create a fake axis to test label tick size
-  // Does not include the tick size or padding, is just the label with 
+  // Does not include the tick size or padding, is just the label with
   const hidden = d3
     .select("body")
     .append("svg")
@@ -17,9 +16,7 @@ export function maxLabelSize(layout, scale, format=null) {
     .attr("height", layout.innerHeight)
     .style("visibility", "hidden"); // "display: none" does not work
 
-  const axis = d3
-    .axisLeft(scale)
-    .tickFormat(format) // Can be null
+  const axis = d3.axisLeft(scale).tickFormat(format); // Can be null
 
   const g = hidden.append("g").call(axis);
 
@@ -48,5 +45,4 @@ export function filterTicks(ticks, layout, labelWidth) {
   const count = parseInt(layout.innerWidth / (labelWidth + 1)) + 1;
   const interval = d3.max([parseInt(Math.ceil(ticks.length / count)), 1]);
   return d3.filter(ticks, (d, i) => i % interval === 0);
-
 }

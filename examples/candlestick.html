@@ -120,8 +120,29 @@ document.getElementById("linear").addEventListener("click", () => {
   ohlcv.useLinear();
 });
 
-ohlcv.spotlight(3);
+const hud = document.querySelector("#hud");
 
+function onMove(data) {
+  ohlcv.spotlight(data.index);
+  if (typeof data.delta !== 'undefined' && data.delta !== null ) {
+    // let clone = hudTemplate.content.cloneNode(true);
+    // clone.querySelector(".date").innerHTML = data.x.toISOString().substring(0, 10);
+    // clone.querySelector(".symbol").innerHTML = data.delta >= 0 ? GAIN : LOSS;
+    // clone.querySelector(".delta").textContent = percent(data.percent);
+    // clone.querySelector("div").style.color = data.color;
+    // hud.replaceChildren(clone);
+  } else {
+    hud.innerHTML = "";
+  }
+}
+
+function onLeave() {
+  hud.innerHTML = "";
+  ohlcv.noSpotlight();
+}
+
+ohlcv.spotlight(3);
+ohlcv.onEvent(onMove, onLeave);
     </script>
   </body>
 </html>

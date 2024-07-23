@@ -160,9 +160,7 @@ export class CandlestickChart extends Chart {
       : d3.axisLeft(yScale);
 
     if (useLog) {
-      yAxis
-        .tickFormat(this.tickFormatY)
-        .tickSize(this.options.Y_TICK_SIZE);
+      yAxis.tickFormat(this.tickFormatY).tickSize(this.options.Y_TICK_SIZE);
     } else {
       yAxis
         .ticks(this.options.getYTickCount(priceHeight), this.tickFormatY)
