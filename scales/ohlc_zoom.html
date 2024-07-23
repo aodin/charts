@@ -177,7 +177,7 @@ const yAxisElement = inner
 
 const xAxisElement = inner
   .append("g")
-  .attr("class", "y axis")
+  .attr("class", "x axis")
   .attr("transform", `translate(${BAND_PADDING * bandwidth},${margin.top + innerHeight})`)
   .call(xAxis)
   // .call((g) => g.select(".domain").remove());

@@ -14,11 +14,19 @@ export class Padding {
   }
 }
 
+export function EqualPadding(value) {
+  return new Padding(value, value, value, value);
+}
+
+export function DefaultPadding() {
+  return new Padding(15, 15, 25, 25);
+}
+
 export class Layout {
   constructor(width, height, padding) {
     this.width = width;
     this.height = height;
-    this.padding = padding;
+    this.padding = padding || DefaultPadding();
   }
 
   get rangeX() {
@@ -57,6 +65,7 @@ export function getLayout(
   } = {},
 ) {
   const chart = document.querySelector(elem);
+  console.log(chart.getBoundingClientRect())
   let width = d3.max([chart.offsetWidth, minWidth]);
   if (maxWidth) {
     width = d3.min([width, maxWidth]);
@@ -67,7 +76,7 @@ export function getLayout(
   if (maxHeight) {
     height = d3.min([height, maxHeight]);
   }
-  return new Layout(width, height, new Padding(15, 15, 25, 25));
+  return new Layout(width, height, DefaultPadding());
 }
 
 export function maxTickWidth(defaults, height, domain, format, options) {
