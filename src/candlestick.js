@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import { Layout, getLayout } from "./layout";
+import { Layout, getLayout, appendSVG } from "./layout";
 import { maxLabelSize, filterTicks } from "./ticks";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
@@ -17,10 +17,32 @@ function barClass(d) {
   return ["bar", c].join(" ");
 }
 
+export function parseArray(d) {
+  return {
+    x: d3.isoParse(d[0]),
+    o: d[1],
+    h: d[2],
+    l: d[3],
+    c: d[4],
+    v: d[5],
+  };
+}
+
+export function parseVerboseObject(d) {
+  return {
+    x: d3.isoParse(d.date),
+    o: d.open,
+    h: d.high,
+    l: d.low,
+    c: d.close,
+    v: d.volume,
+  };
+}
+
 export class Candlestick {
   formatX = "%m %d, %Y";
 
-  constructor(data) {
+  constructor(data, parser = (d) => d) {
     // Default config
     this.config = {
       VOLUME_RATIO: 0.0,
@@ -28,22 +50,13 @@ export class Candlestick {
       SCREEN_HEIGHT_FRACTION: 0.5,
       BAND_PADDING: 0.2,
       DURATION_MS: 500,
+      VOLUME_AXIS_RIGHT: true,
+      HIDE_VOLUME_AXIS: false,
     };
 
-    // TODO How to do extensible data parsing?
     // Get data in a {x, o, h, l, c, v} format
-    this.data = d3.map(data, (d) => {
-      return {
-        x: d3.isoParse(d[0]),
-        o: d[1],
-        h: d[2],
-        l: d[3],
-        c: d[4],
-        v: d[5],
-      };
-    });
-
-    // Save min / max?
+    this.data = d3.map(data, parser);
+    // TODO Save min / max?
   }
 
   // TODO method to append a data point
@@ -61,12 +74,20 @@ export class Candlestick {
   }
 
   showVolume(ratio = 0.1) {
+    // TODO Allow to be called dynamically?
     this.config.VOLUME_RATIO = ratio;
     return this;
   }
 
   hideVolume() {
+    // TODO Allow to be called dynamically?
     return this.showVolume(0.0);
+  }
+
+  hideVolumeAxis() {
+    // The volume chart will still be shown, but without a label
+    this.config.HIDE_VOLUME_AXIS = true;
+    return this;
   }
 
   defaultLog() {
@@ -79,37 +100,74 @@ export class Candlestick {
     return this;
   }
 
+  screenHeightFraction(value) {
+    this.config.SCREEN_HEIGHT_FRACTION = value;
+    return this;
+  }
+
   // Render has three basic states
   // 1. No SVG element - use width of parent and height of screen
   // 2. SVG element without size attributes - use width of parent and height of screen
   //    - But SVG elements don't have a width???
   // 3. SVG element with size attributes - use those
   render(selector) {
-    // TODO Detect SVG?
-    this.svg = d3.select(selector);
+    const elem = d3.select(selector);
+    if (!elem.node()) {
+      throw new Error(
+        `Unable to find a DOM element for selector '${selector}'`,
+      );
+    }
 
-    const width = +this.svg.attr("width");
-    const height = +this.svg.attr("height");
+    if (elem.node().tagName === "svg") {
+      this.svg = elem;
+      const width = +this.svg.attr("width");
+      const height = +this.svg.attr("height");
+      // TODO fallback to viewbox?
 
-    if (width && height) {
-      this.layout = new Layout(width, height);
+      if (width && height) {
+        this.layout = new Layout(width, height);
+      } else {
+        // TODO SVGs must have a width or height or the defaults will be returned
+        this.layout = getLayout(selector, {
+          screenHeightFraction: this.config.SCREEN_HEIGHT_FRACTION,
+        });
+      }
     } else {
       this.layout = getLayout(selector, {
         screenHeightFraction: this.config.SCREEN_HEIGHT_FRACTION,
       });
+      this.svg = appendSVG(selector, this.layout.width, this.layout.height);
     }
 
+    // The price and volume portions of the chart will share an x-axis
     const volumeHeight = this.layout.innerHeight * this.config.VOLUME_RATIO;
     const priceHeight = this.layout.innerHeight - volumeHeight;
+
+    const maxVolume = d3.max(d3.map(this.data, (d) => d.v));
+
+    this.scaleVolume = d3
+      .scaleLinear()
+      .domain([0, maxVolume])
+      .range([volumeHeight, 0])
+      .clamp(true)
+      .nice();
+
+    // Determine right padding from volume ticks
+    if (!this.config.HIDE_VOLUME_AXIS) {
+      const [volWidth, volHeight] = maxLabelSize(
+        this.layout,
+        this.scaleVolume,
+        volume,
+      );
+      this.layout.padding.right = volWidth + 5;
+    }
 
     const minY = d3.min(d3.map(this.data, (d) => d.l));
     let domainY = [minY, d3.max(d3.map(this.data, (d) => d.h))];
 
-    // TODO Add padding to price domain?
-    // TODO Just use nice?
-    const domainPaddingY = (domainY[1] - domainY[0]) * 0.1;
-    console.log("domainPaddingY", domainPaddingY);
-    domainY = [domainY[0] - domainPaddingY, domainY[1] + domainPaddingY];
+    // TODO Add padding to price domain? Just use nice()?
+    // const domainPaddingY = (domainY[1] - domainY[0]) * 0.1;
+    // domainY = [domainY[0] - domainPaddingY, domainY[1] + domainPaddingY];
 
     const rangeY = [priceHeight, 0];
 
@@ -122,10 +180,8 @@ export class Candlestick {
       .clamp(true);
 
     const rangeX = d3.map(this.data, (d) => d.x);
-    console.log("rangeX", rangeX);
 
     // Get the max tick label width for the y-axis on both linear and log scales
-
     const [logWidth, logHeight] = maxLabelSize(this.layout, this.scaleLog);
     const [linearWidth, linearHeight] = maxLabelSize(
       this.layout,
@@ -133,10 +189,8 @@ export class Candlestick {
     );
     const labelWidthY = d3.max([logWidth, linearWidth]);
 
-    console.log("Y size:", labelWidthY);
-
     // Update the left padding to fit the y-axis labels
-    this.layout.padding.left = labelWidthY + 10;
+    this.layout.padding.left = labelWidthY + 5;
 
     // Set the inner display
     this.inner = this.svg
@@ -147,17 +201,21 @@ export class Candlestick {
       );
 
     // Add g elements for the price and volume portions
-    this.price = this.inner.append("g").attr("transform", `translate(0,0)`);
+    this.price = this.inner.append("g").attr("class", "price");
 
     this.volume = this.inner
       .append("g")
-      .attr("transform", `translate(0,${volumeHeight})`);
+      .attr(
+        "transform",
+        `translate(0,${this.layout.innerHeight - volumeHeight})`,
+      )
+      .attr("class", "volume");
 
     this.scaleX = d3
       .scaleBand(rangeX, [0, this.layout.innerWidth])
       .paddingInner(this.config.BAND_PADDING)
-      .align(0.5)
-      .round(true);
+      .align(0.5);
+    // NOTE do not use round
 
     // NOTE The date formatter needs to be created because it uses a
     // closure to determine a new year
@@ -169,11 +227,9 @@ export class Candlestick {
       this.scaleX,
       dates,
     );
-    console.log("labelWidth", labelWidth);
 
     const X = d3.map(this.data, (d) => d.x);
     const filteredX = filterTicks(X, this.layout, labelWidth);
-    console.log("TICKS", filteredX);
 
     // Reset the date formatter
     dates = makeDateFormatter();
@@ -189,7 +245,7 @@ export class Candlestick {
       .tickFormat(dates)
       .tickSize(3);
 
-    this.elemAxisY = this.inner
+    this.elemAxisPrice = this.inner
       .append("g")
       .attr("class", "y axis")
       .attr("transform", `translate(0,0)`)
@@ -215,9 +271,6 @@ export class Candlestick {
         `translate(${bandPadding + 0.5},${this.layout.innerHeight})`,
       )
       .call(axisX);
-
-    console.log("this.scaleX.step()", this.scaleX.step());
-    console.log("this.scaleX.bandwidth()", this.scaleX.bandwidth());
 
     this.candles = this.inner
       .append("g")
@@ -249,6 +302,44 @@ export class Candlestick {
 
     this.updateScale(scaleY);
 
+    // Optional volume
+    if (volumeHeight) {
+      this.axisVolume = d3
+        .axisRight(this.scaleVolume)
+        .ticks(1) // Never show more than 1 non-zero tick for the volume
+        .tickFormat(volume)
+        .tickSize(3);
+
+      if (!this.config.HIDE_VOLUME_AXIS) {
+        this.volume
+          .append("g")
+          .attr("transform", `translate(${this.layout.innerWidth},0)`)
+          .call(this.axisVolume);
+      }
+
+      this.volumeBars = this.volume
+        .append("g")
+        .attr("stroke", "currentColor")
+        .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
+        .selectAll("g")
+        .data(this.data)
+        .join("g")
+        .attr(
+          "transform",
+          (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+        );
+
+      this.volumeBars
+        .append("line")
+        .attr("y1", this.scaleVolume(0))
+        .attr("y2", this.scaleVolume(0))
+        .attr("stroke-width", this.scaleX.bandwidth())
+        .attr("class", (d) => barClass(d))
+        .transition()
+        .duration(this.config.DURATION_MS)
+        .attr("y2", (d) => this.scaleVolume(d.v || 0));
+    }
+
     // Optional spotlight of a bar
     // Don't call the class "tooltip" - that interferes with Bootstrap
     this.spotlightBar = this.inner
@@ -261,7 +352,7 @@ export class Candlestick {
   }
 
   updateScale(scale) {
-    this.elemAxisY
+    this.elemAxisPrice
       .transition()
       .duration(this.config.DURATION_MS)
       .call(d3.axisLeft(scale).tickSize(0));
@@ -288,9 +379,12 @@ export class Candlestick {
   }
 
   spotlight(index) {
+    // TODO The padding is only needed if width is set to bandwidth instead of step
+    // const padding = this.scaleX.bandwidth() * this.scaleX.paddingInner() * 0.5;
+
     this.spotlightBar
-      .attr("x", this.scaleX(this.data[index].x) + 5) // TODO Why the 5? What offset?
-      .attr("width", this.scaleX.bandwidth())
+      .attr("x", this.scaleX(this.data[index].x))
+      .attr("width", this.scaleX.step())
       .attr("y", 0)
       .attr("height", this.layout.innerHeight)
       .style("display", "block");
@@ -332,7 +426,8 @@ export class Candlestick {
 
       if (index > 0) {
         const prev = this.data[index - 1];
-        if (prev) {
+        if (prev && prev.c) {
+          data.prev = prev.c;
           data.delta = data.c - prev.c;
           data.percent = data.delta / prev.c;
           // data.color = this.options.OHLC_COLORS[1 + Math.sign(-data.delta)];

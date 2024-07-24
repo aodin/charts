@@ -65,7 +65,6 @@ export function getLayout(
   } = {},
 ) {
   const chart = document.querySelector(elem);
-  console.log(chart.getBoundingClientRect());
   let width = d3.max([chart.offsetWidth, minWidth]);
   if (maxWidth) {
     width = d3.min([width, maxWidth]);
@@ -117,4 +116,15 @@ export function maxTickWidth(defaults, height, domain, format, options) {
 
   // Add some padding
   return width + options.X_TICK_GUTTER + 5;
+}
+
+export function appendSVG(selector, width, height) {
+  // Append an SVG element to the selected element
+  return d3
+    .select(selector)
+    .append("svg")
+    .attr("viewBox", [0, 0, width, height])
+    .attr("style", "max-width: 100%; height: intrinsic;")
+    .style("-webkit-tap-highlight-color", "transparent")
+    .style("overflow", "visible");
 }
