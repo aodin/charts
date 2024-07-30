@@ -119,10 +119,7 @@ export class CandlestickChart extends Chart {
     const pricePortion = this.options.HIDE_VOLUME ? 1.0 : 0.9;
     const priceHeight = this.layout.innerHeight * pricePortion;
 
-    const yRange = [
-      this.layout.pad.top + priceHeight,
-      this.layout.pad.top,
-    ];
+    const yRange = [this.layout.pad.top + priceHeight, this.layout.pad.top];
 
     const yRangeVolume = [
       this.layout.pad.top + this.layout.innerHeight,

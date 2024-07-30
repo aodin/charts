@@ -100,7 +100,6 @@ body {
       <h1>Candlestick</h1>
       <button id="log">Log</button>
       <button id="linear">Linear</button>
-      <button id="zoom">Zoom</button>
       <button id="reset">Reset</button>
       <div id="hud"></div>
     </div>
@@ -154,8 +153,11 @@ const percent = new Intl.NumberFormat('en-US', {
 
 const ohlcv = charts.OHLCV(crypto, charts.parseVerboseObject)
   .screenHeightFraction(0.8)
+  // .showVolume(0.08)
   .showVolume(0.08)
-  .hideVolumeAxis();
+  .hideVolume()
+  // .hideVolumeAxis()
+  .defaultLog()
 
 ohlcv.render("#chart");
 
@@ -165,10 +167,6 @@ document.getElementById("log").addEventListener("click", () => {
 
 document.getElementById("linear").addEventListener("click", () => {
   ohlcv.useLinear();
-});
-
-document.getElementById("zoom").addEventListener("click", () => {
-  ohlcv.zoom();
 });
 
 document.getElementById("reset").addEventListener("click", () => {
