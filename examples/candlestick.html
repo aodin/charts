@@ -9,8 +9,13 @@
 } */
 body {
   font-family: sans-serif;
-  /* color: white;
-  background-color: black; */
+  color: white;
+  background-color: black;
+}
+#menu {
+  display: flex;
+  flex: columns;
+  justify-content: space-between;
 }
 #title {
   display: flex;
@@ -101,11 +106,13 @@ body {
     </style>
   </head>
   <body>
-    <div id="title">
-      <h1>Candlestick</h1>
-      <button id="log">Log</button>
-      <button id="linear">Linear</button>
-      <button id="reset">Reset</button>
+    <div id="menu">
+      <div id="title">
+        <h1>Candlestick</h1>
+        <button id="log">Log</button>
+        <button id="linear">Linear</button>
+        <button id="reset">Reset</button>
+      </div>
       <div id="hud"></div>
     </div>
     <div id="chart"></div>
@@ -158,10 +165,6 @@ const percent = new Intl.NumberFormat('en-US', {
 
 const ohlcv = charts.OHLCV(crypto, charts.parseVerboseObject)
   .screenHeightFraction(0.8)
-  // .showVolume(0.08)
-  .showVolume(0.08)
-  .hideVolume()
-  // .hideVolumeAxis()
   .defaultLog()
 
 ohlcv.render("#chart");
