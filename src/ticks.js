@@ -1,3 +1,5 @@
+import * as d3 from "d3";
+
 /*
 To filter categorical x ticks, we need to:
 1. get the width of the largest x tick label

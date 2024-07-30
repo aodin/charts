@@ -2,10 +2,10 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { OHLCV } from "../src/ohlcv";
+import { OHLCV } from "../src/candlestick";
 import { candles } from "./data";
 
-describe("OHLCV", () => {
+describe("Candlestick", () => {
   beforeEach(() => {
     global.window = new Window();
     global.window.document.write(
@@ -16,12 +16,12 @@ describe("OHLCV", () => {
 
   it("should be rendered on the DOM", () => {
     const ohlcv = OHLCV(candles);
-    ohlcv.renderLog("#chart");
-    expect(ohlcv.X.length).toBe(candles.length);
+    ohlcv.render("#chart");
+    expect(ohlcv.data.length).toBe(candles.length);
 
     function onMove(data) {}
     function onLeave() {}
-    ohlcv.enableHover(onMove, onLeave);
+    ohlcv.onHover(onMove, onLeave);
   });
 
   afterEach(() => {

@@ -39,28 +39,6 @@ function extentData(data, start = 0, end) {
   return [minY, d3.max(d3.map(data, (d) => d.h))];
 }
 
-export function parseArray(d) {
-  return {
-    x: d3.isoParse(d[0]),
-    o: d[1],
-    h: d[2],
-    l: d[3],
-    c: d[4],
-    v: d[5],
-  };
-}
-
-export function parseVerboseObject(d) {
-  return {
-    x: d3.isoParse(d.date),
-    o: d.open,
-    h: d.high,
-    l: d.low,
-    c: d.close,
-    v: d.volume,
-  };
-}
-
 function invertBand(scale, x) {
   const domain = scale.domain();
   const padOuter = scale(domain[0]);
@@ -70,6 +48,8 @@ function invertBand(scale, x) {
 }
 
 export class Candlestick {
+  // Candlestick expects data in the format [{x, o, h, l, c, v}...]
+  // Specify a parser if your input data is in a different format
   formatX = "%m %d, %Y";
 
   constructor(data, parser = (d) => d) {
@@ -284,14 +264,9 @@ export class Candlestick {
       .tickFormat(dates)
       .tickSize(3);
 
-    this.gPrice = this.inner
-      .append("g")
-      .attr("class", "y axis")
-      .call(axisY)
+    this.gPrice = this.inner.append("g").attr("class", "y axis").call(axisY);
 
-    this.grid = this.inner
-      .append("g")
-      .attr("class", "grid")
+    this.grid = this.inner.append("g").attr("class", "grid");
 
     const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
 
@@ -397,7 +372,7 @@ export class Candlestick {
       .append("rect")
       .style("display", "none")
       .style("pointer-events", "none");
-    
+
     // Set the initial prices with the default axes
     this.update();
   }
@@ -490,7 +465,7 @@ export class Candlestick {
     // Update the axisY according to the new min and max of the data
     let domainY = extentData(this.data, this.start, this.end);
 
-    this.scaleLog.domain(domainY)
+    this.scaleLog.domain(domainY);
     this.scaleLinear.domain(domainY);
 
     const axisY = d3.axisLeft(this.scaleY);
@@ -521,13 +496,13 @@ export class Candlestick {
     this.gPrice
       .transition()
       .duration(this.config.DURATION_MS)
-      .call(axisY.tickSize(0))
+      .call(axisY.tickSize(0));
 
     // Update the grid
     this.grid
       .transition()
       .duration(this.config.DURATION_MS)
-      .call(axisY.ticks().tickFormat("").tickSize(-this.layout.innerWidth))
+      .call(axisY.ticks().tickFormat("").tickSize(-this.layout.innerWidth));
 
     // Update the candles
     this.candles
@@ -578,7 +553,10 @@ export class Candlestick {
     if (!selection) return;
     // Get the closest indices to the selection
     const [x0, x1] = selection;
-    [this.start, this.end] = [invertBand(this.scaleX, x0), invertBand(this.scaleX, x1)];
+    [this.start, this.end] = [
+      invertBand(this.scaleX, x0),
+      invertBand(this.scaleX, x1),
+    ];
     this.update();
 
     // Reset the brush
@@ -586,7 +564,7 @@ export class Candlestick {
   }
 
   reset() {
-    this.start = 0
+    this.start = 0;
     this.end = this.data.length - 1;
     this.update();
   }
