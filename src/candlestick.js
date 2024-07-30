@@ -7,7 +7,7 @@ import { throttle } from "./throttle";
 import { volume } from "./formats";
 
 function signOf(d) {
-  // TODO Assumes both are defined
+  // TODO Assumes both open and close are defined
   return 1 + Math.sign(d.o - d.c);
 }
 
@@ -15,6 +15,29 @@ function barClass(d) {
   // Append a class to the bar depending on its delta
   const c = ["up", "even", "down"][signOf(d)];
   return ["bar", c].join(" ");
+}
+
+function zoomRange(domain, width, start, end) {
+  // Return the range extent needed to zoom to the start and end indices of the domain
+  // TODO Make sure end is greater than start
+  let w = end - start + 1;
+  let ratio = 1;
+  if (w < domain.length) {
+    ratio = domain.length / w;
+  }
+  const offset = start / domain.length;
+  const zWidth = width * ratio;
+  const offsetX = offset * zWidth;
+  return [0 - offsetX, zWidth - offsetX];
+}
+
+function extentData(data, start=0, end) {
+  // Calculate the extent of the price data, optionally with a subslice
+  if (end) {
+    data = data.slice(start, end)
+  }
+  const minY = d3.min(d3.map(data, (d) => d.l));
+  return [minY, d3.max(d3.map(data, (d) => d.h))];
 }
 
 export function parseArray(d) {
@@ -39,6 +62,15 @@ export function parseVerboseObject(d) {
   };
 }
 
+function invertBand(scale, x) {
+  const domain = scale.domain();
+  const padOuter = scale(domain[0]);
+  const eachBand = scale.step();
+  const index = Math.floor(((x - padOuter) / eachBand));
+  return Math.max(0,Math.min(index, domain.length-1));
+};
+
+
 export class Candlestick {
   formatX = "%m %d, %Y";
 
@@ -48,7 +80,7 @@ export class Candlestick {
       VOLUME_RATIO: 0.0,
       LOG_Y: false,
       SCREEN_HEIGHT_FRACTION: 0.5,
-      BAND_PADDING: 0.2,
+      BAND_PAD: 0.2,
       DURATION_MS: 500,
       VOLUME_AXIS_RIGHT: true,
       HIDE_VOLUME_AXIS: false,
@@ -152,22 +184,22 @@ export class Candlestick {
       .clamp(true)
       .nice();
 
-    // Determine right padding from volume ticks
+    // Right pad the volume ticks
     if (!this.config.HIDE_VOLUME_AXIS) {
       const [volWidth, volHeight] = maxLabelSize(
         this.layout,
         this.scaleVolume,
         volume,
       );
-      this.layout.padding.right = volWidth + 5;
+      this.layout.pad.right = volWidth + 5;
     }
 
-    const minY = d3.min(d3.map(this.data, (d) => d.l));
-    let domainY = [minY, d3.max(d3.map(this.data, (d) => d.h))];
+    let domainY = extentData(this.data);
+    const minY = domainY[0];
 
-    // TODO Add padding to price domain? Just use nice()?
-    // const domainPaddingY = (domainY[1] - domainY[0]) * 0.1;
-    // domainY = [domainY[0] - domainPaddingY, domainY[1] + domainPaddingY];
+    // TODO Pad the price domain? Just use nice()?
+    // const domainPadY = (domainY[1] - domainY[0]) * 0.1;
+    // domainY = [domainY[0] - domainPadY, domainY[1] + domainPadY];
 
     const rangeY = [priceHeight, 0];
 
@@ -189,15 +221,15 @@ export class Candlestick {
     );
     const labelWidthY = d3.max([logWidth, linearWidth]);
 
-    // Update the left padding to fit the y-axis labels
-    this.layout.padding.left = labelWidthY + 5;
+    // Left pad the the y-axis labels
+    this.layout.pad.left = labelWidthY + 5;
 
     // Set the inner display
     this.inner = this.svg
       .append("g")
       .attr(
         "transform",
-        `translate(${this.layout.padding.left}, ${this.layout.padding.top})`,
+        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
       );
 
     // Add g elements for the price and volume portions
@@ -205,15 +237,15 @@ export class Candlestick {
 
     this.volume = this.inner
       .append("g")
+      .attr("class", "volume")
       .attr(
         "transform",
         `translate(0,${this.layout.innerHeight - volumeHeight})`,
-      )
-      .attr("class", "volume");
+      );
 
     this.scaleX = d3
       .scaleBand(rangeX, [0, this.layout.innerWidth])
-      .paddingInner(this.config.BAND_PADDING)
+      .paddingInner(this.config.BAND_PAD)
       .align(0.5);
     // NOTE do not use round
 
@@ -234,18 +266,18 @@ export class Candlestick {
     // Reset the date formatter
     dates = makeDateFormatter();
 
-    // Set the default scale
+    // Set the default scaleY
     // TODO Pass a render option? Include zoom?
-    const scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
+    this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
 
-    const axisY = d3.axisLeft(scaleY).tickSize(0);
-    const axisX = d3
+    const axisY = d3.axisLeft(this.scaleY).tickSize(0);
+    this.axisX = d3
       .axisBottom(this.scaleX)
       .tickValues(filteredX)
       .tickFormat(dates)
       .tickSize(3);
 
-    this.elemAxisPrice = this.inner
+    this.gPrice = this.inner
       .append("g")
       .attr("class", "y axis")
       .attr("transform", `translate(0,0)`)
@@ -260,17 +292,17 @@ export class Candlestick {
           .attr("x2", this.layout.innerWidth),
       );
 
-    const bandPadding =
-      (this.scaleX.bandwidth() * this.config.BAND_PADDING) / 2;
+    const bandPad =
+      (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
 
-    const elemAxisX = this.inner
+    this.gx = this.inner
       .append("g")
       .attr("class", "x axis")
       .attr(
         "transform",
-        `translate(${bandPadding + 0.5},${this.layout.innerHeight})`,
+        `translate(${bandPad + 0.5},${this.layout.innerHeight})`,
       )
-      .call(axisX);
+      .call(this.axisX);
 
     this.candles = this.inner
       .append("g")
@@ -290,19 +322,20 @@ export class Candlestick {
       .attr("stroke-width", 1)
       .attr("class", "wick")
       .attr("opacity", 0.8)
-      .attr("y1", scaleY(minY))
-      .attr("y2", scaleY(minY));
+      .attr("y1", this.scaleY(minY))
+      .attr("y2", this.scaleY(minY));
 
     this.bars = this.candles
       .append("line")
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("class", (d) => barClass(d))
-      .attr("y1", scaleY(minY))
-      .attr("y2", scaleY(minY));
+      .attr("y1", this.scaleY(minY))
+      .attr("y2", this.scaleY(minY));
 
-    this.updateScale(scaleY);
+    this.updateY();
 
     // Optional volume
+    // TODO Define these properties as empty if there is no volume display
     if (volumeHeight) {
       this.axisVolume = d3
         .axisRight(this.scaleVolume)
@@ -317,7 +350,7 @@ export class Candlestick {
           .call(this.axisVolume);
       }
 
-      this.volumeBars = this.volume
+      this.volumeSlots = this.volume
         .append("g")
         .attr("stroke", "currentColor")
         .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
@@ -329,16 +362,26 @@ export class Candlestick {
           (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
         );
 
-      this.volumeBars
+      this.volumeBars = this.volumeSlots
         .append("line")
         .attr("y1", this.scaleVolume(0))
         .attr("y2", this.scaleVolume(0))
         .attr("stroke-width", this.scaleX.bandwidth())
         .attr("class", (d) => barClass(d))
-        .transition()
+
+      this.volumeBars.transition()
         .duration(this.config.DURATION_MS)
         .attr("y2", (d) => this.scaleVolume(d.v || 0));
     }
+
+    // Brush for zoom
+    this.brush = d3.brushX()
+      .extent([[0, 0], [this.layout.innerWidth, this.layout.innerHeight]])
+      .on("end", this.zoom.bind(this));
+
+    this.gBrush = this.inner.append("g")
+      .attr("class", "brush")
+      .call(this.brush.bind(this));
 
     // Optional spotlight of a bar
     // Don't call the class "tooltip" - that interferes with Bootstrap
@@ -351,36 +394,38 @@ export class Candlestick {
       .style("pointer-events", "none");
   }
 
-  updateScale(scale) {
-    this.elemAxisPrice
+  updateY() {
+    this.gPrice
       .transition()
       .duration(this.config.DURATION_MS)
-      .call(d3.axisLeft(scale).tickSize(0));
+      .call(d3.axisLeft(this.scaleY).tickSize(0));
 
     this.bars
       .transition()
       .duration(this.config.DURATION_MS)
-      .attr("y1", (d) => scale(d.o))
-      .attr("y2", (d) => scale(d.c));
+      .attr("y1", (d) => this.scaleY(d.o))
+      .attr("y2", (d) => this.scaleY(d.c));
 
     this.wicks
       .transition()
       .duration(this.config.DURATION_MS)
-      .attr("y1", (d) => scale(d.l))
-      .attr("y2", (d) => scale(d.h));
+      .attr("y1", (d) => this.scaleY(d.l))
+      .attr("y2", (d) => this.scaleY(d.h));
   }
 
   useLog() {
-    this.updateScale(this.scaleLog);
+    this.scaleY = this.scaleLog;
+    this.updateY();
   }
 
   useLinear() {
-    this.updateScale(this.scaleLinear);
+    this.scaleY = this.scaleLinear;
+    this.updateY();
   }
 
   spotlight(index) {
-    // TODO The padding is only needed if width is set to bandwidth instead of step
-    // const padding = this.scaleX.bandwidth() * this.scaleX.paddingInner() * 0.5;
+    // TODO We only need to pad if width is set to bandwidth instead of step
+    // const pad = this.scaleX.bandwidth() * this.scaleX.paddingInner() * 0.5;
 
     this.spotlightBar
       .attr("x", this.scaleX(this.data[index].x))
@@ -397,21 +442,12 @@ export class Candlestick {
   onEvent(move, leave) {
     // Enable events for the chart. On move, determine which band is being
     // hovered over and send an object of its OHLCV data to the move callback.
-    // The leave callback is triggered when the pointer leaves the SVG elem
-    // Calculate the Voronoi of a single line of x-coordinates
-
-    // TODO Points need to be re-calculated with scaleX changes
-    const points = d3.map(this.data, (d) => [
-      this.scaleX(d.x) + this.scaleX.step() / 2 + this.layout.padding.left,
-      1,
-    ]);
-    const delaunay = d3.Delaunay.from(points);
-
+    // The leave callback is triggered when the pointer leaves the SVG elem.
     let prevIndex = null;
 
     const pointermove = (evt) => {
       const [xm] = d3.pointer(evt);
-      const index = delaunay.find(xm, 1);
+      const index = invertBand(this.scaleX, xm - this.layout.pad.left);
 
       // Only trigger the callback when the index changes
       if (prevIndex && prevIndex == index) {
@@ -449,6 +485,69 @@ export class Candlestick {
     this.svg
       .on("pointermove", throttle(pointermove, 20.83))
       .on("pointerleave", pointerleave);
+  }
+
+  updateX(i0, i1) {
+    // Update the chart to start and end on the given x-axis indices
+    // The y-axis will also be updated to the min and max of the data for the given xs
+    const zRange = zoomRange(this.scaleX.domain(), this.layout.innerWidth, i0, i1);
+    // Do not update the domain - just the range
+    this.scaleX.range(zRange)
+
+    // TODO Update the axisY according to the new min and max of the data
+    let domainY = extentData(this.data, i0, i1);
+
+    // this.scaleLog.domain(domainY)
+    // this.scaleLinear.domain(domainY);
+    // this.updateY()
+    
+    // TODO Re-filter the dates
+    // this.scaleX.domain(newX).range([0, this.layout.innerWidth]);
+    // const filteredX = filterTicks(X, this.layout, labelWidth);
+    
+    // Update the x axis
+    this.gx.transition().duration(this.config.DURATION_MS).call(this.axisX);
+
+    // Update the candles
+    this.candles.transition().duration(this.config.DURATION_MS)
+      .attr(
+        "transform",
+        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+      );
+
+    this.bars.transition().duration(this.config.DURATION_MS)
+      .attr("stroke-width", this.scaleX.bandwidth())
+
+    // Update the spotlight
+    // TODO Need the selected index for the x coordinate
+    this.spotlightBar.transition().duration(this.config.DURATION_MS)
+      // .attr("x", this.scaleX(this.data[i].x))
+      .attr("width", this.scaleX.step())
+
+    // Update the volume
+    this.volumeSlots.transition().duration(this.config.DURATION_MS)
+      .attr(
+        "transform",
+        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+      )
+
+    this.volumeBars.transition().duration(this.config.DURATION_MS)
+      .attr("stroke-width", this.scaleX.bandwidth())
+  }
+
+  zoom({selection}) {
+    if (!selection) return;
+    // Get the closest indices to the selection
+    const [x0, x1] = selection;
+    const [i0, i1] = [invertBand(this.scaleX, x0), invertBand(this.scaleX, x1)];
+    this.updateX(i0, i1);
+
+    // Reset the brush
+    this.gBrush.call(this.brush.move, null);
+  }
+
+  reset() {
+    this.updateX(0, this.scaleX.domain().length - 1);
   }
 }
 

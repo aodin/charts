@@ -82,6 +82,17 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
+/* Brush */
+.overlay {
+    fill: none;
+    pointer-events: all;
+}
+.brush .selection {
+    fill: #777;
+    fill-opacity: 0.3;
+    stroke: #fff;
+    shape-rendering: crispEdges;
+}
     </style>
   </head>
   <body>
@@ -90,7 +101,7 @@ body {
       <button id="log">Log</button>
       <button id="linear">Linear</button>
       <button id="zoom">Zoom</button>
-      <button id="original">Original</button>
+      <button id="reset">Reset</button>
       <div id="hud"></div>
     </div>
     <div id="chart"></div>
@@ -141,8 +152,9 @@ const percent = new Intl.NumberFormat('en-US', {
   signDisplay: 'exceptZero',
 }).format;
 
-const ohlcv = charts.OHLCV(data, charts.parseArray)
+const ohlcv = charts.OHLCV(crypto, charts.parseVerboseObject)
   .screenHeightFraction(0.8)
+  .showVolume(0.08)
   .hideVolumeAxis();
 
 ohlcv.render("#chart");
@@ -153,6 +165,14 @@ document.getElementById("log").addEventListener("click", () => {
 
 document.getElementById("linear").addEventListener("click", () => {
   ohlcv.useLinear();
+});
+
+document.getElementById("zoom").addEventListener("click", () => {
+  ohlcv.zoom();
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  ohlcv.reset();
 });
 
 const hud = document.querySelector("#hud");

@@ -5,7 +5,7 @@ Most of the layout operations are placing a rectangle within another rectangle.
 What is the most generic way to do this?
 */
 
-export class Padding {
+export class Pad {
   constructor(top, right, bottom, left) {
     this.top = top;
     this.right = right;
@@ -14,35 +14,35 @@ export class Padding {
   }
 }
 
-export function EqualPadding(value) {
-  return new Padding(value, value, value, value);
+export function EqualPad(value) {
+  return new Pad(value, value, value, value);
 }
 
-export function DefaultPadding() {
-  return new Padding(15, 15, 25, 25);
+export function DefaultPad() {
+  return new Pad(15, 15, 25, 25);
 }
 
 export class Layout {
-  constructor(width, height, padding) {
+  constructor(width, height, pad) {
     this.width = width;
     this.height = height;
-    this.padding = padding || DefaultPadding();
+    this.pad = pad || DefaultPad();
   }
 
   get rangeX() {
-    return [this.padding.left, this.width - this.padding.right];
+    return [this.pad.left, this.width - this.pad.right];
   }
 
   get rangeY() {
-    return [this.height - this.padding.bottom, this.padding.top];
+    return [this.height - this.pad.bottom, this.pad.top];
   }
 
   get innerWidth() {
-    return this.width - this.padding.left - this.padding.right;
+    return this.width - this.pad.left - this.pad.right;
   }
 
   get innerHeight() {
-    return this.height - this.padding.top - this.padding.bottom;
+    return this.height - this.pad.top - this.pad.bottom;
   }
 
   get innerMinimum() {
@@ -75,7 +75,7 @@ export function getLayout(
   if (maxHeight) {
     height = d3.min([height, maxHeight]);
   }
-  return new Layout(width, height, DefaultPadding());
+  return new Layout(width, height, DefaultPad());
 }
 
 export function maxTickWidth(defaults, height, domain, format, options) {
@@ -114,7 +114,7 @@ export function maxTickWidth(defaults, height, domain, format, options) {
   // Remove the axis
   hidden.remove();
 
-  // Add some padding
+  // Pad
   return width + options.X_TICK_GUTTER + 5;
 }
 

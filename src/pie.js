@@ -54,7 +54,7 @@ export class PieChart extends Chart {
 
     // Determine the layout
     this.layout = this.getLayout(elem);
-    this.layout.padding = this.getPadding(this.layout);
+    this.layout.pad = this.getPad(this.layout);
 
     this.createSVG(elem, this.layout);
 

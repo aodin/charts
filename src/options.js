@@ -20,7 +20,7 @@ export class Options {
     this.Y_TICKS_RIGHT = false;
 
     // OHLC
-    this.BAND_PADDING = 0.2; // As a percentage of the band
+    this.BAND_PAD = 0.2; // As a percentage of the band
     this.VOLUME_OPACITY = 0.6;
     this.OHLC_COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]
     this.VOLUME_COLORS = ["#1ebc8c", "#b2b2b2", "#f34d27"]; // [up, no change, down]

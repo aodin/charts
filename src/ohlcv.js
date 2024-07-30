@@ -3,7 +3,7 @@ Candlestick OHLCV chart
 */
 import * as d3 from "d3";
 
-import { maxTickWidth, Padding } from "./layout";
+import { maxTickWidth, Pad } from "./layout";
 import { Chart } from "./chart";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
@@ -20,24 +20,24 @@ export class CandlestickChart extends Chart {
     this.I = d3.range(this.X.length);
   }
 
-  getPadding(layout) {
-    const padding = new Padding(15, 25, 25, 40);
+  getPad(layout) {
+    const pad = new Pad(15, 25, 25, 40);
 
-    // Adjust the padding to accommodate the price ticks
+    // Pad the price ticks
     const priceWidth = maxTickWidth(
-      padding,
+      pad,
       this.layout.height,
       this.getDomainY(),
       this.tickFormatY,
       this.options,
     );
 
-    // Adjust the padding to accommodate the volume tick
+    // Pad the volume ticks
     let volumeWidth = 0;
 
     if (this.options.showVolumeTicks) {
       volumeWidth = maxTickWidth(
-        padding,
+        pad,
         this.layout.height,
         this.yDomainVolume,
         volume,
@@ -46,12 +46,12 @@ export class CandlestickChart extends Chart {
     }
 
     if (this.options.Y_TICKS_RIGHT) {
-      padding.right = d3.max([priceWidth, volumeWidth, padding.right]);
+      pad.right = d3.max([priceWidth, volumeWidth, pad.right]);
     } else {
-      padding.left = d3.max([priceWidth, padding.left]);
-      padding.right = d3.max([volumeWidth, padding.right]);
+      pad.left = d3.max([priceWidth, pad.left]);
+      pad.right = d3.max([volumeWidth, pad.right]);
     }
-    return padding;
+    return pad;
   }
 
   noAnimation() {
@@ -114,26 +114,26 @@ export class CandlestickChart extends Chart {
   render(elem, useLog) {
     // Determine the size of the DOM element
     this.layout = this.getLayout(elem);
-    this.layout.padding = this.getPadding(this.layout);
+    this.layout.pad = this.getPad(this.layout);
 
     const pricePortion = this.options.HIDE_VOLUME ? 1.0 : 0.9;
     const priceHeight = this.layout.innerHeight * pricePortion;
 
     const yRange = [
-      this.layout.padding.top + priceHeight,
-      this.layout.padding.top,
+      this.layout.pad.top + priceHeight,
+      this.layout.pad.top,
     ];
 
     const yRangeVolume = [
-      this.layout.padding.top + this.layout.innerHeight,
-      this.layout.padding.top + priceHeight,
+      this.layout.pad.top + this.layout.innerHeight,
+      this.layout.pad.top + priceHeight,
     ];
 
     // Construct scales and axes
     // NOTE scaleBand takes all 'categorical' x-axis items - not just extent
     this.xScale = d3
       .scaleBand(this.X, this.getRangeX(this.layout))
-      .padding(this.options.BAND_PADDING)
+      .padding(this.options.BAND_PAD)
       .align(0.1);
 
     let yScale = useLog
@@ -176,7 +176,7 @@ export class CandlestickChart extends Chart {
     // Create SVG
     this.createSVG(elem, this.layout);
 
-    const bandPadding = (this.bandWidth * this.options.BAND_PADDING) / 2;
+    const bandPad = (this.bandWidth * this.options.BAND_PAD) / 2;
 
     // X-axis
     this.svg
@@ -184,15 +184,15 @@ export class CandlestickChart extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${bandPadding},${this.layout.height - this.layout.padding.bottom + this.options.X_TICK_GUTTER})`,
+        `translate(${bandPad},${this.layout.height - this.layout.pad.bottom + this.options.X_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
 
     // Price y-axis
     const translateY = this.options.Y_TICKS_RIGHT
-      ? this.layout.width - this.layout.padding.right
-      : this.layout.padding.left - this.options.Y_TICK_GUTTER;
+      ? this.layout.width - this.layout.pad.right
+      : this.layout.pad.left - this.options.Y_TICK_GUTTER;
     const gridX1 = this.options.Y_TICKS_RIGHT
       ? -this.options.Y_TICK_GUTTER
       : this.options.Y_TICK_GUTTER;
@@ -223,7 +223,7 @@ export class CandlestickChart extends Chart {
         .style("font-size", this.options.FONT_SIZE)
         .attr(
           "transform",
-          `translate(${this.layout.width - this.layout.padding.right},0)`,
+          `translate(${this.layout.width - this.layout.pad.right},0)`,
         )
         .call(yAxisVolume)
         .call((g) => g.select(".domain").remove());
@@ -317,7 +317,7 @@ export class CandlestickChart extends Chart {
     this.highlightBand
       .attr("x", this.xScale(this.X[index]))
       .attr("width", this.bandWidth)
-      .attr("y", this.layout.padding.top)
+      .attr("y", this.layout.pad.top)
       .attr("height", this.layout.innerHeight)
       .style("display", "block");
   }

@@ -13,7 +13,7 @@ export class LineChart extends Chart {
 
     // Determine the layout
     this.layout = this.getLayout(elem);
-    this.layout.padding = this.getPadding(this.layout);
+    this.layout.pad = this.getPad(this.layout);
 
     this.createSVG(elem, this.layout);
 
@@ -34,7 +34,7 @@ export class LineChart extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(0,${this.layout.height - this.layout.padding.bottom + this.options.Y_TICK_GUTTER})`,
+        `translate(0,${this.layout.height - this.layout.pad.bottom + this.options.Y_TICK_GUTTER})`,
       )
       .call(xAxis)
       .call((g) => g.select(".domain").remove());
@@ -58,7 +58,7 @@ export class LineChart extends Chart {
       .style("font-size", this.options.FONT_SIZE)
       .attr(
         "transform",
-        `translate(${this.layout.padding.left - this.options.X_TICK_GUTTER},0)`,
+        `translate(${this.layout.pad.left - this.options.X_TICK_GUTTER},0)`,
       )
       .call(yAxis)
       .call((g) => g.select(".domain").remove())

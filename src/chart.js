@@ -138,9 +138,9 @@ export class Chart {
     });
   }
 
-  getPadding(layout) {
+  getPad(layout) {
     const width = maxTickWidth(
-      layout.padding,
+      layout.pad,
       layout.height,
       this.getDomainY(),
       this.tickFormatY,
@@ -148,11 +148,11 @@ export class Chart {
     );
 
     if (this.options.Y_TICKS_RIGHT) {
-      layout.padding.right = width;
+      layout.pad.right = width;
     } else {
-      layout.padding.left = width;
+      layout.pad.left = width;
     }
-    return layout.padding;
+    return layout.pad;
   }
 
   createSVG(elem, layout) {
