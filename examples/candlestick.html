@@ -4,10 +4,13 @@
     <title>@aodin/charts - OHLCV</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style type="text/css">
+/* svg {
+  shape-rendering: crispEdges;
+} */
 body {
   font-family: sans-serif;
-  color: white;
-  background-color: black;
+  /* color: white;
+  background-color: black; */
 }
 #title {
   display: flex;
@@ -84,14 +87,16 @@ body {
 }
 /* Brush */
 .overlay {
-    fill: none;
-    pointer-events: all;
+  fill: none;
+  pointer-events: all;
 }
 .brush .selection {
-    fill: #777;
-    fill-opacity: 0.3;
-    stroke: #fff;
-    shape-rendering: crispEdges;
+  fill: #777;
+  fill-opacity: 0.3;
+  stroke: #fff;
+}
+.grid line {
+  stroke: rgba(187, 187, 187, 0.5); /* semi-transparent lines */
 }
     </style>
   </head>

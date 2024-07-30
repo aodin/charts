@@ -284,15 +284,10 @@ export class Candlestick {
       .append("g")
       .attr("class", "y axis")
       .call(axisY)
-      .call((g) =>
-        g
-          .selectAll(".tick line")
-          .clone()
-          .attr("stroke", "#bbb") // Works for black or white background at 50% opacity
-          .attr("stroke-opacity", 0.5)
-          .attr("x1", 0)
-          .attr("x2", this.layout.innerWidth),
-      );
+
+    this.grid = this.inner
+      .append("g")
+      .attr("class", "grid")
 
     const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
 
@@ -407,10 +402,17 @@ export class Candlestick {
   }
 
   updateY() {
+    const axisY = d3.axisLeft(this.scaleY);
+
     this.gPrice
       .transition()
       .duration(this.config.DURATION_MS)
-      .call(d3.axisLeft(this.scaleY).tickSize(0));
+      .call(axisY.tickSize(0))
+
+    this.grid
+      .transition()
+      .duration(this.config.DURATION_MS)
+      .call(axisY.ticks().tickFormat("").tickSize(-this.layout.innerWidth))
 
     this.bars
       .transition()
