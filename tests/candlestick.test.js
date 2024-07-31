@@ -2,8 +2,7 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { OHLCV } from "../src/candlestick";
-import { parseArray } from "../src/parsers";
+import { OHLCV, parseArray } from "../src/candlestick";
 import { candles } from "./data";
 
 describe("Candlestick", () => {

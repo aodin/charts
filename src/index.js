@@ -9,7 +9,6 @@ export * from "./layout";
 export * from "./line";
 export * from "./magnitude";
 export * from "./options";
-export * from "./parsers";
 export * from "./pie";
 export * from "./throttle";
 export * from "./ticks";
