@@ -6,6 +6,28 @@ import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
 import { volume } from "./formats";
 
+export function parseArray(d) {
+  return {
+    x: d3.isoParse(d[0]),
+    o: d[1],
+    h: d[2],
+    l: d[3],
+    c: d[4],
+    v: d[5],
+  };
+}
+
+export function parseVerboseObject(d) {
+  return {
+    x: d3.isoParse(d.date),
+    o: d.open,
+    h: d.high,
+    l: d.low,
+    c: d.close,
+    v: d.volume,
+  };
+}
+
 function signOf(d) {
   // TODO Assumes both open and close are defined
   return 1 + Math.sign(d.o - d.c);
@@ -48,23 +70,25 @@ function invertBand(scale, x) {
 }
 
 export class Candlestick {
+  // Allow a custom formatting of prices, setting null will use default formats
+  priceFormat = d3.format(",~f");
+
   // Candlestick expects data in the format [{x, o, h, l, c, v}...]
   // Specify a parser if your input data is in a different format
-  formatX = "%m %d, %Y";
-
   constructor(data, parser = (d) => d) {
     // Default config
     this.config = {
       VOLUME_RATIO: 0.0,
-      LOG_Y: false,
+      LOG_Y: false, // We need to know which scale is used for proper tick formats
       SCREEN_HEIGHT_FRACTION: 0.5,
-      BAND_PAD: 0.2,
+      BAND_PAD: 0.1,
       DURATION_MS: 500,
       VOLUME_AXIS_RIGHT: true,
       HIDE_VOLUME_AXIS: false,
     };
 
     // Get data in a {x, o, h, l, c, v} format
+    // TODO Warn if data wasn't parsed
     this.data = d3.map(data, parser);
 
     // Also save the X axis, since it is used for filtering tick labels
@@ -91,6 +115,11 @@ export class Candlestick {
 
   animationDuration(value) {
     this.config.DURATION_MS = value;
+    return this;
+  }
+
+  setBandPadding(value) {
+    this.config.BAND_PAD = value;
     return this;
   }
 
@@ -181,7 +210,7 @@ export class Candlestick {
     if (this.volumeAxesIsVisible) {
       const [volWidth, volHeight] = maxLabelSize(
         this.layout,
-        this.scaleVolume,
+        this.scaleVolume.copy(),
         volume,
       );
       this.layout.pad.right = volWidth + 5;
@@ -189,26 +218,26 @@ export class Candlestick {
 
     let domainY = extentData(this.data);
     const minY = domainY[0];
-
-    // TODO Pad the price domain? Just use nice()?
-    // const domainPadY = (domainY[1] - domainY[0]) * 0.1;
-    // domainY = [domainY[0] - domainPadY, domainY[1] + domainPadY];
-
     const rangeY = [priceHeight, 0];
 
     // Axes
-    this.scaleLog = d3.scaleLog().domain(domainY).range(rangeY).clamp(true);
     this.scaleLinear = d3
       .scaleLinear()
       .domain(domainY)
       .range(rangeY)
       .clamp(true);
+    this.scaleLog = d3.scaleLog().domain(domainY).range(rangeY).clamp(true);
 
     // Get the max tick label width for the y-axis on both linear and log scales
-    const [logWidth, logHeight] = maxLabelSize(this.layout, this.scaleLog);
+    const [logWidth, logHeight] = maxLabelSize(
+      this.layout,
+      this.scaleLog.copy(),
+      this.priceFormat,
+    );
     const [linearWidth, linearHeight] = maxLabelSize(
       this.layout,
-      this.scaleLinear,
+      this.scaleLinear.copy(),
+      this.priceFormat,
     );
     const labelWidthY = d3.max([logWidth, linearWidth]);
 
@@ -245,7 +274,7 @@ export class Candlestick {
     // Get the max tick label width for the x-axis
     const [labelWidthX, labelHeight] = maxLabelSize(
       this.layout,
-      this.scaleX,
+      this.scaleX.copy(),
       dates,
     );
     this.labelWidthX = labelWidthX;
@@ -255,18 +284,32 @@ export class Candlestick {
     dates = makeDateFormatter();
 
     // Set the zero state
-    this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
+    let fmt;
+    if (this.config.LOG_Y) {
+      this.scaleY = this.scaleLog;
+      const numTicks = d3.max([this.scaleLinear.ticks().length, 5]);
+      fmt = this.scaleLog.tickFormat(numTicks, this.priceFormat);
+    } else {
+      this.scaleY = this.scaleLinear;
+      fmt = this.priceFormat;
+    }
+    const axisY = d3.axisLeft(this.scaleY).tickFormat(fmt);
 
-    const axisY = d3.axisLeft(this.scaleY).tickSize(0);
     this.axisX = d3
       .axisBottom(this.scaleX)
       .tickValues(filteredX)
       .tickFormat(dates)
       .tickSize(3);
 
-    this.gPrice = this.inner.append("g").attr("class", "y axis").call(axisY);
+    this.gPrice = this.inner
+      .append("g")
+      .attr("class", "y axis")
+      .call(axisY.tickSize(0));
 
-    this.grid = this.inner.append("g").attr("class", "grid");
+    this.grid = this.inner
+      .append("g")
+      .attr("class", "grid")
+      .call(axisY.tickSize(-this.layout.innerWidth));
 
     const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
 
@@ -311,27 +354,28 @@ export class Candlestick {
     // Volume elements are always rendered even if their height is zero
     this.axisVolume = d3
       .axisRight(this.scaleVolume)
-      .ticks(1) // Never show more than 1 non-zero tick for the volume
+      .ticks(2) // TODO Option for number of volume ticks
       .tickFormat(volume)
       .tickSize(3);
 
     this.volume = this.inner
       .append("g")
       .attr("class", "volume")
-      .attr("clip-path", "url(#inner-clip-path)")
       .attr(
         "transform",
         `translate(0,${this.layout.innerHeight - volumeHeight})`,
       );
 
-    this.volume
+    this.gVolume = this.volume
       .append("g")
+      .attr("class", "v axis")
       .attr("transform", `translate(${this.layout.innerWidth},0)`)
       .call(this.axisVolume)
       .attr("visibility", this.volumeAxesVisibility);
 
     this.volumeSlots = this.volume
       .append("g")
+      .attr("clip-path", "url(#inner-clip-path)")
       .attr("stroke", "currentColor")
       .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
       .selectAll("g")
@@ -378,12 +422,12 @@ export class Candlestick {
   }
 
   useLog() {
-    this.scaleY = this.scaleLog;
+    this.config.LOG_Y = true;
     this.update();
   }
 
   useLinear() {
-    this.scaleY = this.scaleLinear;
+    this.config.LOG_Y = false;
     this.update();
   }
 
@@ -459,16 +503,26 @@ export class Candlestick {
       this.start,
       this.end,
     );
+
     // Do not update the domain - just the range
     this.scaleX.range(zRange);
 
     // Update the axisY according to the new min and max of the data
     let domainY = extentData(this.data, this.start, this.end);
 
-    this.scaleLog.domain(domainY);
     this.scaleLinear.domain(domainY);
+    this.scaleLog.domain(domainY); // TODO .nice() can be called here
 
-    const axisY = d3.axisLeft(this.scaleY);
+    let fmt;
+    if (this.config.LOG_Y) {
+      this.scaleY = this.scaleLog;
+      const numTicks = d3.max([this.scaleLinear.ticks().length, 5]);
+      fmt = this.scaleLog.tickFormat(numTicks, this.priceFormat);
+    } else {
+      this.scaleY = this.scaleLinear;
+      fmt = this.priceFormat;
+    }
+    const axisY = d3.axisLeft(this.scaleY).tickFormat(fmt);
 
     // Re-filter the X-axis date labels
     const filteredX = filterTicks(
@@ -502,7 +556,7 @@ export class Candlestick {
     this.grid
       .transition()
       .duration(this.config.DURATION_MS)
-      .call(axisY.ticks().tickFormat("").tickSize(-this.layout.innerWidth));
+      .call(axisY.tickFormat("").tickSize(-this.layout.innerWidth));
 
     // Update the candles
     this.candles
@@ -570,10 +624,10 @@ export class Candlestick {
   }
 }
 
-export function OHLC(data, options) {
-  return new Candlestick(data, options);
+export function OHLC(data, parser) {
+  return new Candlestick(data, parser);
 }
 
-export function OHLCV(data, options) {
-  return new Candlestick(data, options).showVolume();
+export function OHLCV(data, parser) {
+  return new Candlestick(data, parser).showVolume();
 }
