@@ -434,7 +434,6 @@ export class Candlestick {
   spotlight(index) {
     // TODO We only need to pad if width is set to bandwidth instead of step
     // const pad = this.scaleX.bandwidth() * this.scaleX.paddingInner() * 0.5;
-
     this.spotlightBar
       .attr("x", this.scaleX(this.data[index].x))
       .attr("width", this.scaleX.step())
@@ -579,12 +578,13 @@ export class Candlestick {
       .attr("y1", (d) => this.scaleY(d.l))
       .attr("y2", (d) => this.scaleY(d.h));
 
-    // Update the spotlight - ticks will move anyway, so no need to be perfect
-    // TODO Instead of this.end index, it should be the last hovered index
+    // Hide the spotlight on update - it will reactivate on next hover
+    this.noSpotlight();
+
+    // Update the spotlight width
     this.spotlightBar
       .transition()
       .duration(this.config.DURATION_MS)
-      .attr("x", this.scaleX(this.data[this.end].x))
       .attr("width", this.scaleX.step());
 
     // Update the volume

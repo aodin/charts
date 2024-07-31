@@ -190,6 +190,8 @@ function onLeave() {
 }
 
 ohlcv.onEvent(onMove, onLeave);
+
+document.getElementById("chart").addEventListener("dblclick", () => ohlcv.reset());
     </script>
   </body>
 </html>
