@@ -37,6 +37,7 @@ const data = [{"date":"2023-07-30","open":0.0000405629,"high":0.000101515,"low":
 const ohlcv = charts.OHLCV(data, charts.parseVerboseObject)
   .screenHeightFraction(0.8)
   .defaultLog()
+  .priceAxisRight()
   .hideVolumeAxis();
 
 ohlcv.render("#chart");
@@ -44,6 +45,7 @@ ohlcv.render("#chart");
 document.getElementById("log").addEventListener("click", ohlcv.useLog.bind(ohlcv));
 document.getElementById("linear").addEventListener("click", ohlcv.useLinear.bind(ohlcv));
 document.getElementById("reset").addEventListener("click", ohlcv.reset.bind(ohlcv));
+document.getElementById("chart").addEventListener("dblclick", ohlcv.reset.bind(ohlcv));
     </script>
   </body>
 </html>
