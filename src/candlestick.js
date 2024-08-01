@@ -83,6 +83,7 @@ export class Candlestick {
       SCREEN_HEIGHT_FRACTION: 0.5,
       BAND_PAD: 0.1,
       DURATION_MS: 500,
+      PRICE_AXIS_RIGHT: false,
       VOLUME_AXIS_RIGHT: true,
       HIDE_VOLUME_AXIS: false,
     };
@@ -159,12 +160,11 @@ export class Candlestick {
     return this;
   }
 
-  // Render has three basic states
-  // 1. No SVG element - use width of parent and height of screen
-  // 2. SVG element without size attributes - use width of parent and height of screen
-  //    - But SVG elements don't have a width???
-  // 3. SVG element with size attributes - use those
   render(selector) {
+    // The selector can either be for an:
+    // 1. SVG element with width and height attributes (TODO fallback to viewbox)
+    // 2. HTML element that has an intrinsic width - an SVG element will be created
+
     const elem = d3.select(selector);
     if (!elem.node()) {
       throw new Error(
@@ -176,8 +176,6 @@ export class Candlestick {
       this.svg = elem;
       const width = +this.svg.attr("width");
       const height = +this.svg.attr("height");
-      // TODO fallback to viewbox?
-
       if (width && height) {
         this.layout = new Layout(width, height);
       } else {
@@ -284,16 +282,8 @@ export class Candlestick {
     dates = makeDateFormatter();
 
     // Set the zero state
-    let fmt;
-    if (this.config.LOG_Y) {
-      this.scaleY = this.scaleLog;
-      const numTicks = d3.max([this.scaleLinear.ticks().length, 5]);
-      fmt = this.scaleLog.tickFormat(numTicks, this.priceFormat);
-    } else {
-      this.scaleY = this.scaleLinear;
-      fmt = this.priceFormat;
-    }
-    const axisY = d3.axisLeft(this.scaleY).tickFormat(fmt);
+    this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
+    const axisY = d3.axisLeft(this.scaleY).tickFormat(this.priceTickFormat);
 
     this.axisX = d3
       .axisBottom(this.scaleX)
@@ -493,6 +483,17 @@ export class Candlestick {
       .on("pointerleave", pointerleave);
   }
 
+  get priceTickFormat() {
+    if (this.config.LOG_Y) {
+      this.scaleY = this.scaleLog;
+      const numTicks = d3.max([this.scaleLinear.ticks().length, 5]);
+      return this.scaleLog.tickFormat(numTicks, this.priceFormat);
+    } else {
+      this.scaleY = this.scaleLinear;
+      return this.priceFormat;
+    }
+  }
+
   update() {
     // Update the chart to start and end on the given x-axis indices
     // The y-axis will also be updated to the min and max of the data for the given xs
@@ -512,16 +513,8 @@ export class Candlestick {
     this.scaleLinear.domain(domainY);
     this.scaleLog.domain(domainY); // TODO .nice() can be called here
 
-    let fmt;
-    if (this.config.LOG_Y) {
-      this.scaleY = this.scaleLog;
-      const numTicks = d3.max([this.scaleLinear.ticks().length, 5]);
-      fmt = this.scaleLog.tickFormat(numTicks, this.priceFormat);
-    } else {
-      this.scaleY = this.scaleLinear;
-      fmt = this.priceFormat;
-    }
-    const axisY = d3.axisLeft(this.scaleY).tickFormat(fmt);
+    this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
+    const axisY = d3.axisLeft(this.scaleY).tickFormat(this.priceTickFormat);
 
     // Re-filter the X-axis date labels
     const filteredX = filterTicks(
