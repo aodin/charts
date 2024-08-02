@@ -130,6 +130,11 @@ export class Candlestick {
     return -this.layout.innerWidth - 5;
   }
 
+  get wickThickness() {
+    // Wick thickness should at least one pixel, but no greater than 1% of the band
+    return d3.max([this.scaleX.bandwidth() * 0.01, 1.0])
+  }
+
   /* Config chained methods */
   animationDuration(value) {
     this.config.DURATION_MS = value;
@@ -310,8 +315,8 @@ export class Candlestick {
       this.scaleX.copy(),
       dates,
     );
-    this.labelWidthX = labelWidthX;
-    const filteredX = filterTicks(this.X, this.layout, labelWidthX);
+    this.labelWidthX = labelWidthX + 5;
+    const filteredX = filterTicks(this.X, this.layout, this.labelWidthX);
 
     // Reset the date formatter
     dates = makeDateFormatter();
@@ -371,7 +376,7 @@ export class Candlestick {
     this.wicks = this.candles
       .append("line")
       .attr("stroke", "currentColor")
-      .attr("stroke-width", 1)
+      .attr("stroke-width", this.wickThickness)
       .attr("class", "wick")
       .attr("y1", this.scaleY(minY))
       .attr("y2", this.scaleY(minY));
@@ -528,6 +533,7 @@ export class Candlestick {
     this.wicks
       .transition()
       .duration(this.config.DURATION_MS)
+      .attr("stroke-width", this.wickThickness)
       .attr("y1", (d) => this.scaleY(d.l))
       .attr("y2", (d) => this.scaleY(d.h));
 
