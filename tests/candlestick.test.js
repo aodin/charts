@@ -24,6 +24,14 @@ describe("Candlestick", () => {
     ohlcv.onEvent(onMove, onLeave);
   });
 
+  if (
+    ("should not error if given no data",
+    () => {
+      const empty = OHLC([]);
+      empty.render("#chart");
+    })
+  );
+
   afterEach(() => {
     delete global.window;
     delete global.document;

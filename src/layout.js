@@ -61,7 +61,7 @@ export function getLayout(
     maxWidth = undefined,
     minHeight = 300,
     maxHeight = undefined,
-    screenHeightFraction = 0.5,
+    screenHeightPercent = 0.5,
   } = {},
 ) {
   const chart = document.querySelector(elem);
@@ -70,7 +70,7 @@ export function getLayout(
     width = d3.min([width, maxWidth]);
   }
 
-  let height = window.innerHeight * screenHeightFraction;
+  let height = window.innerHeight * screenHeightPercent;
   height = d3.max([height, minHeight]);
   if (maxHeight) {
     height = d3.min([height, maxHeight]);
@@ -127,4 +127,34 @@ export function appendSVG(selector, width, height) {
     .attr("style", "max-width: 100%; height: intrinsic;")
     .style("-webkit-tap-highlight-color", "transparent")
     .style("overflow", "visible");
+}
+
+export function layoutSVG(selector, config) {
+  // Return the SVG elements and its layout
+  const elem = d3.select(selector);
+  if (!elem.node()) {
+    throw new Error(`Unable to find a DOM element for selector '${selector}'`);
+  }
+
+  if (elem.node().tagName === "svg") {
+    const svg = elem;
+    const width = +svg.attr("width");
+    const height = +svg.attr("height");
+    // TODO Fallback to viewbox
+    if (width && height) {
+      return [svg, new Layout(width, height)];
+    } else {
+      // TODO SVGs must have a width or height or the defaults will be returned
+      const layout = getLayout(selector, {
+        screenHeightPercent: config.SCREEN_HEIGHT_PERCENT,
+      });
+      return [svg, layout];
+    }
+  }
+
+  const layout = getLayout(selector, {
+    screenHeightPercent: config.SCREEN_HEIGHT_PERCENT,
+  });
+  const svg = appendSVG(selector, layout.width, layout.height);
+  return [svg, layout];
 }

@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import { Layout, getLayout, appendSVG } from "./layout";
+import { layoutSVG } from "./layout";
 import { maxLabelSize, filterTicks } from "./ticks";
 import { makeDateFormatter } from "./timeseries";
 import { throttle } from "./throttle";
@@ -79,7 +79,7 @@ export class Candlestick {
     this.config = {
       VOLUME_RATIO: 0.0,
       LOG_Y: false, // We need to know which scale is used for proper tick formats
-      SCREEN_HEIGHT_FRACTION: 0.5,
+      SCREEN_HEIGHT_PERCENT: 0.5,
       BAND_PAD: 0.1,
       DURATION_MS: 500,
       PRICE_AXIS_RIGHT: false,
@@ -100,6 +100,66 @@ export class Candlestick {
     this.start = 0;
     this.end = this.data.length - 1;
   }
+
+  /* Config chained methods */
+  animationDuration(value) {
+    this.config.DURATION_MS = value;
+    return this;
+  }
+
+  noAnimation() {
+    return this.animationDuration(0);
+  }
+
+  setBandPadding(value) {
+    this.config.BAND_PAD = value;
+    return this;
+  }
+
+  priceAxisRight() {
+    // The price axis ticks and labels will be shown on the right of the chart
+    this.config.PRICE_AXIS_RIGHT = true;
+    return this;
+  }
+
+  showVolume(ratio = 0.1) {
+    // TODO Allow to be called dynamically?
+    this.config.VOLUME_RATIO = ratio;
+    return this;
+  }
+
+  hideVolume() {
+    // TODO Allow to be called dynamically?
+    return this.showVolume(0.0);
+  }
+
+  hideVolumeAxis() {
+    // The volume chart will still be shown, but without a label
+    this.config.HIDE_VOLUME_AXIS = true;
+    return this;
+  }
+
+  volumeTickCount(value = 1) {
+    // Number of volume axis ticks that should be shown
+    this.config.VOLUME_TICK_COUNT = value;
+    return this;
+  }
+
+  defaultLog() {
+    this.config.LOG_Y = true;
+    return this;
+  }
+
+  defaultLinear() {
+    this.config.LOG_Y = false;
+    return this;
+  }
+
+  screenHeightPercent(value) {
+    this.config.SCREEN_HEIGHT_PERCENT = value;
+    return this;
+  }
+  /* End config chained methods */
 
   get volumeAxesIsVisible() {
     return Boolean(this.config.VOLUME_RATIO) && !this.config.HIDE_VOLUME_AXIS;
@@ -132,98 +192,17 @@ export class Candlestick {
 
   get wickThickness() {
     // Wick thickness should at least one pixel, but no greater than 1% of the band
-    return d3.max([this.scaleX.bandwidth() * 0.01, 1.0])
+    return d3.max([this.scaleX.bandwidth() * 0.01, 1.0]);
   }
-
-  /* Config chained methods */
-  animationDuration(value) {
-    this.config.DURATION_MS = value;
-    return this;
-  }
-
-  setBandPadding(value) {
-    this.config.BAND_PAD = value;
-    return this;
-  }
-
-  noAnimation() {
-    return this.animationDuration(0);
-  }
-
-  priceAxisRight() {
-    // The price axis ticks and labels will be shown on the right of the chart
-    this.config.PRICE_AXIS_RIGHT = true;
-    return this;
-  }
-
-  showVolume(ratio = 0.1) {
-    // TODO Allow to be called dynamically?
-    this.config.VOLUME_RATIO = ratio;
-    return this;
-  }
-
-  hideVolume() {
-    // TODO Allow to be called dynamically?
-    return this.showVolume(0.0);
-  }
-
-  hideVolumeAxis() {
-    // The volume chart will still be shown, but without a label
-    this.config.HIDE_VOLUME_AXIS = true;
-    return this;
-  }
-
-  volumeTickCount(value=1) {
-    // Number of volume axis ticks that should be shown
-    this.config.VOLUME_TICK_COUNT = value;
-    return this;
-  }
-
-  defaultLog() {
-    this.config.LOG_Y = true;
-    return this;
-  }
-
-  defaultLinear() {
-    this.config.LOG_Y = false;
-    return this;
-  }
-
-  screenHeightFraction(value) {
-    this.config.SCREEN_HEIGHT_FRACTION = value;
-    return this;
-  }
-  /* End config chained methods */
 
   render(selector) {
-    // The selector can either be for an:
-    // 1. SVG element with width and height attributes (TODO fallback to viewbox)
-    // 2. HTML element that has an intrinsic width - an SVG element will be created
-    const elem = d3.select(selector);
-    if (!elem.node()) {
-      throw new Error(
-        `Unable to find a DOM element for selector '${selector}'`,
-      );
-    }
+    // If there is no data, do not render
+    if (!this.data.length) return;
 
-    if (elem.node().tagName === "svg") {
-      this.svg = elem;
-      const width = +this.svg.attr("width");
-      const height = +this.svg.attr("height");
-      if (width && height) {
-        this.layout = new Layout(width, height);
-      } else {
-        // TODO SVGs must have a width or height or the defaults will be returned
-        this.layout = getLayout(selector, {
-          screenHeightFraction: this.config.SCREEN_HEIGHT_FRACTION,
-        });
-      }
-    } else {
-      this.layout = getLayout(selector, {
-        screenHeightFraction: this.config.SCREEN_HEIGHT_FRACTION,
-      });
-      this.svg = appendSVG(selector, this.layout.width, this.layout.height);
-    }
+    // The selector can either be for an:
+    // 1. SVG element with width and height attributes
+    // 2. HTML element that has an intrinsic width - an SVG element will be created
+    [this.svg, this.layout] = layoutSVG(selector, this.config);
 
     // The price and volume portions of the chart will share an x-axis
     const volumeHeight = this.layout.innerHeight * this.config.VOLUME_RATIO;
@@ -650,7 +629,7 @@ export class Candlestick {
     };
 
     this.svg
-      .on("pointermove", throttle(pointermove, 20.83))
+      .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
       .on("pointerleave", pointerleave);
   }
 
