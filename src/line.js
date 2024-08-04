@@ -119,7 +119,7 @@ export class LineChart {
   get xScale() {
     return d3
       .scaleLinear()
-      .domain(d3.extent(d3.map(filtered, (d) => d.x)))
+      .domain(d3.extent(d3.map(this.visibleData, (d) => d.x)))
       .range([0, this.layout.innerWidth]);
   }
 
@@ -128,6 +128,10 @@ export class LineChart {
       .scaleLinear()
       .domain(d3.extent(d3.map(this.visibleData, (d) => d.y)))
       .range([this.layout.innerHeight, 0]);
+  }
+
+  get zoomIsDisabled() {
+    return this.config.ZOOM_EXTENT[0] === 1 && this.config.ZOOM_EXTENT[1] === 1;
   }
 
   xAxis(g, x) {
@@ -224,12 +228,6 @@ export class LineChart {
       .scaleExtent(this.config.ZOOM_EXTENT)
       .on("zoom", zoomed.bind(this));
 
-    // Disable zoom completely if requested
-    // .on("mousedown.zoom", null)
-    // .on("touchstart.zoom", null)
-    // .on("touchmove.zoom", null)
-    // .on("touchend.zoom", null);
-
     // Dot - shows nearest point during pointer events
     this.dot = gInner.append("g").attr("class", "dot").style("display", "none");
     this.circle = this.dot.append("circle").attr("r", this.config.DOT_RADIUS);
@@ -267,7 +265,14 @@ export class LineChart {
   }
 
   reset() {
-    this.svg.call(this.zoom).call(this.zoom.transform, d3.zoomIdentity);
+    const z = this.svg.call(this.zoom).call(this.zoom.transform, d3.zoomIdentity);
+    if (this.zoomIsDisabled) {
+      // Disable zoom completely if requested
+      z.on("mousedown.zoom", null)
+      .on("touchstart.zoom", null)
+      .on("touchmove.zoom", null)
+      .on("touchend.zoom", null);
+    }
   }
 
   placeDot(index) {
