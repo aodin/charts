@@ -42,34 +42,21 @@ const data = [
 ];
 const pie = charts.Donut(data, charts.parseTimeSeries3dArray)
   // .noAnimation()
+  // .renderClosed()
+  .skipEnterAnimation()
   .useDiscreteScheme(d3.schemeTableau10);
 pie.render("#chart");
 
 function onEnter(d, evt) {
-  pie.enlarge(d.data.z);
-  pie.highlight(d.data.z);
+  pie.enlarge(d.data.z, true);
+  // pie.highlight(d.data.z);
 }
 function onLeave(d, evt) {
+  // pie.noHighlight();
   pie.reset();
-  pie.noHighlight();
 }
-// pie.onEvent(onEnter, onLeave);
+pie.onEvent(onEnter, onLeave);
 
-const random = d3.randomInt(0, pie.X.length);
-let prev = pie.X.length - 1;
-
-d3.interval(() => {
-  let next = null;
-  while (true) {
-    next = random();
-    if (next !== prev) break;
-  }
-  prev = next;
-
-  const x = pie.X[next];
-  console.log("Updating pie:", x)
-  pie.update(x);
-}, 1000)
     </script>
   </body>
 </html>

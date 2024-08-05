@@ -86,8 +86,11 @@ export class LineChart {
   }
 
   useContinuousScheme(scheme, min = 0.0, max = 1.0) {
-    const colors = d3.quantize((t) => scheme(t * max + min), this.z.length);
-    return this.useCategoricalScheme(colors);
+    const colors = d3.quantize(
+      (t) => scheme(t * (max - min) + min),
+      this.z.length,
+    );
+    return this.useDiscreteScheme(colors);
   }
 
   zoomExtent(min, max) {

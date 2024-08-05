@@ -42,8 +42,11 @@ export class PieChart {
       OUTER_RADIUS: 0.8,
       INNER_RADIUS_HOVER: 0.3,
       OUTER_RADIUS_HOVER: 0.9,
+      BACKGROUND_OPACITY: 0.5, // Opacity when another slice is highlighted
       START_ANGLE: 0,
       END_ANGLE: 2 * Math.PI,
+      INITIAL_CLOSED: false,
+      SKIP_ENTER_ANIMATION: false,
       COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
     };
 
@@ -79,8 +82,11 @@ export class PieChart {
   }
 
   useContinuousScheme(scheme, min = 0.0, max = 1.0) {
-    const colors = d3.quantize((t) => scheme(t * max + min), this.Z.length);
-    return this.useCategoricalScheme(colors);
+    const colors = d3.quantize(
+      (t) => scheme(t * (max - min) + min),
+      this.Z.length,
+    );
+    return this.useDiscreteScheme(colors);
   }
 
   radii(inner, outer) {
@@ -103,11 +109,16 @@ export class PieChart {
     return this;
   }
 
-  renderAsZero() {
+  renderClosed() {
     // The initial render of the pie chart will be all zero, aka closed
+    this.config.INITIAL_CLOSED = true;
     return this;
   }
 
+  skipEnterAnimation() {
+    this.config.SKIP_ENTER_ANIMATION = true;
+    return this;
+  }
   /* End config chained methods */
 
   get legend() {
@@ -175,14 +186,16 @@ export class PieChart {
     //   .attr("transform", (d) => `translate(${this.arc.centroid(d)})`)
     //   .text(d => this.getLabel(d));
 
-    this.update(latest);
+    if (!this.config.INITIAL_CLOSED) {
+      this.update(latest);
+    }
   }
 
   update(x) {
     // Update the pie chart with the data at the given x value
     const items = this.byX.get(x);
 
-    // Make sure all Z items are represented in the new data - it makes updates easier
+    // TODO All Z items should be represented in the new data - it makes updates easier
     const arcs = this.pie(items);
     const path = this.slices.selectAll("path").data(arcs, (d) => d.data.z);
 
@@ -211,6 +224,9 @@ export class PieChart {
       .transition()
       .duration(this.config.DURATION_MS)
       .attrTween("d", (d) => {
+        if (this.config.SKIP_ENTER_ANIMATION) {
+          return () => arc(d);
+        }
         const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
         return (t) => arc(interpolate(t));
       });
@@ -251,7 +267,9 @@ export class PieChart {
       .selectAll("path")
       .transition()
       .duration(this.config.DURATION_MS)
-      .attr("opacity", (d) => (d.data.z === z ? 1.0 : 0.5));
+      .attr("opacity", (d) =>
+        d.data.z === z ? 1.0 : this.config.BACKGROUND_OPACITY,
+      );
   }
 
   onEvent(enter, leave) {
