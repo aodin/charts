@@ -34,22 +34,42 @@ const data = [
   ["2020-05-01", 120, "B"],
   ["2020-06-01", 50, "B"],
   ["2020-01-01", 0, "C"],
+  ["2020-02-01", 0, "C"],
+  ["2020-03-01", 0, "C"],
   ["2020-04-01", 10, "C"],
   ["2020-05-01", 10, "C"],
   ["2020-06-01", 12, "C"],
 ];
-const pie = charts.Donut(data).colorSet(d3.schemeSet1);
+const pie = charts.Donut(data, charts.parseTimeSeries3dArray)
+  // .noAnimation()
+  .useDiscreteScheme(d3.schemeTableau10);
 pie.render("#chart");
 
-function onEnter(data, evt, d) {
-  pie.enlarge(data.z);
-  pie.highlight(data.z);
+function onEnter(d, evt) {
+  pie.enlarge(d.data.z);
+  pie.highlight(d.data.z);
 }
-function onLeave(data, evt, d) {
+function onLeave(d, evt) {
   pie.reset();
   pie.noHighlight();
 }
-pie.enableEvents(onEnter, onLeave);
+// pie.onEvent(onEnter, onLeave);
+
+const random = d3.randomInt(0, pie.X.length);
+let prev = pie.X.length - 1;
+
+d3.interval(() => {
+  let next = null;
+  while (true) {
+    next = random();
+    if (next !== prev) break;
+  }
+  prev = next;
+
+  const x = pie.X[next];
+  console.log("Updating pie:", x)
+  pie.update(x);
+}, 1000)
     </script>
   </body>
 </html>

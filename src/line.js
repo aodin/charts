@@ -40,7 +40,7 @@ export class LineChart {
       STROKE_WIDTH: 1.5, // Width when not highlighted
       DOT_RADIUS: 3.0, // Radius of the dot
       ZOOM_EXTENT: [0.5, 32],
-      COLORS: d3.schemeCategory10,
+      COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
     };
 
     this.data = d3.map(data, parser);
@@ -50,24 +50,14 @@ export class LineChart {
     // Items can be dynamically hidden from the chart
     this.hidden = new Set();
 
-    // Colors can be set by a scheme or manually with additional data
-    // return d3.map(this.zItems, (d) => {
-    //   return Object.assign({ color: this.getColor(d.key) }, d);
-    // });
-
     this.colors = d3.scaleOrdinal().domain(this.z).range(this.config.COLORS);
-
-    this.items = d3.map(this.z, (d) => {
-      return { key: d, color: this.colors(d) };
-    });
   }
 
   parseItems() {
+    // By default, items will be built from unique z values. To specify the items
+    // instead (and optionally provide a color) override this method
     return [];
   }
-
-  // By default, items will be built from unique z values. To specify the items
-  // instead (and optionally provide a color) override this method
 
   /* Config chained methods */
   screenHeightPercent(value) {
@@ -90,10 +80,14 @@ export class LineChart {
     return this;
   }
 
-  setColors(name) {
-    // TODO Discrete vs. continuous?
-    this.config.COLORS = name;
+  useDiscreteScheme(scheme) {
+    this.colors = d3.scaleOrdinal().domain(this.z).range(scheme);
     return this;
+  }
+
+  useContinuousScheme(scheme, min = 0.0, max = 1.0) {
+    const colors = d3.quantize((t) => scheme(t * max + min), this.z.length);
+    return this.useCategoricalScheme(colors);
   }
 
   zoomExtent(min, max) {
@@ -108,7 +102,9 @@ export class LineChart {
 
   get legend() {
     // Return the z items along with their colors
-    return this.items;
+    return d3.map(this.z, (d) => {
+      return { key: d, color: this.colors(d) };
+    });
   }
 
   get visibleData() {
@@ -142,10 +138,6 @@ export class LineChart {
     g.call(
       d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(this.yFormat),
     );
-  }
-
-  colorOf(z) {
-    return this.colors(z);
   }
 
   render(selector) {
@@ -259,19 +251,21 @@ export class LineChart {
 
     this.paths
       .attr("d", ([, I]) => line(I))
-      .attr("stroke", ([z]) => this.colorOf(z))
+      .attr("stroke", ([z]) => this.colors(z))
       .attr("class", ([z]) => z)
       .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
   }
 
   reset() {
-    const z = this.svg.call(this.zoom).call(this.zoom.transform, d3.zoomIdentity);
+    const z = this.svg
+      .call(this.zoom)
+      .call(this.zoom.transform, d3.zoomIdentity);
     if (this.zoomIsDisabled) {
       // Disable zoom completely if requested
       z.on("mousedown.zoom", null)
-      .on("touchstart.zoom", null)
-      .on("touchmove.zoom", null)
-      .on("touchend.zoom", null);
+        .on("touchstart.zoom", null)
+        .on("touchmove.zoom", null)
+        .on("touchend.zoom", null);
     }
   }
 
@@ -281,7 +275,7 @@ export class LineChart {
     this.dot
       .style("display", null)
       .attr("transform", `translate(${this.x(d.x)},${this.y(d.y)})`);
-    this.circle.attr("fill", this.colorOf(d.z));
+    this.circle.attr("fill", this.colors(d.z));
   }
 
   hideDot() {

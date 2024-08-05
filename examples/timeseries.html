@@ -108,7 +108,8 @@ const data = [
 ];
 const line = new charts.TimeSeries(data, charts.parseTimeSeries3dArray)
   .screenHeightPercent(0.8)
-  .disableZoom();
+  .disableZoom()
+  .useContinuousScheme(d3.interpolatePlasma);
 
 const legend = document.querySelector("#legend");
 const template = document.querySelector("#legendTemplate");

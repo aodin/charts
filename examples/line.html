@@ -49,7 +49,8 @@ const data = [
 ];
 const line = new charts.Line(data, charts.parse3dArray)
   .screenHeightPercent(0.8)
-  .zoomExtent(1, 16);
+  .zoomExtent(1, 16)
+  .useDiscreteScheme(d3.schemeTableau10);
 
 line.yFormat = d3.format(".2f");
 line.xFormat = d3.format(".2f");
