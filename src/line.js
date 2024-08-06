@@ -28,7 +28,7 @@ export class LineChart {
   yFormat = null;
 
   // Line charts expect data is the format [{x, y, z}...]
-  // Specify a parser if your input data is in a different format
+  // Specify a parser or override parse() if your input data is in a different format
   constructor(data, parser = (d) => d) {
     // Default config
     this.config = {
@@ -43,20 +43,31 @@ export class LineChart {
       COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
     };
 
-    this.data = d3.map(data, parser);
-
-    this.z = Array.from(new Set(d3.map(this.data, (d) => d.z)));
-
     // Items can be dynamically hidden from the chart
     this.hidden = new Set();
 
-    this.colors = d3.scaleOrdinal().domain(this.z).range(this.config.COLORS);
+    this.data = this.parseData(data, parser);
+    this.items = this.parseItems(data);
+    this.Z = this.parseZ(data);
+    this.colors = this.setColors(data);
   }
 
-  parseItems() {
+  parseData(data, parser) {
+    return d3.map(data, parser);
+  }
+
+  parseItems(data) {
     // By default, items will be built from unique z values. To specify the items
     // instead (and optionally provide a color) override this method
-    return [];
+    return Array.from(new Set(d3.map(this.data, (d) => d.z)));
+  }
+
+  parseZ(data) {
+    return this.items;
+  }
+
+  setColors(data) {
+    return d3.scaleOrdinal().domain(this.Z).range(this.config.COLORS);
   }
 
   /* Config chained methods */
@@ -81,14 +92,14 @@ export class LineChart {
   }
 
   useDiscreteScheme(scheme) {
-    this.colors = d3.scaleOrdinal().domain(this.z).range(scheme);
+    this.colors = d3.scaleOrdinal().domain(this.Z).range(scheme);
     return this;
   }
 
   useContinuousScheme(scheme, min = 0.0, max = 1.0) {
     const colors = d3.quantize(
       (t) => scheme(t * (max - min) + min),
-      this.z.length,
+      this.Z.length,
     );
     return this.useDiscreteScheme(colors);
   }
@@ -105,7 +116,7 @@ export class LineChart {
 
   get legend() {
     // Return the z items along with their colors
-    return d3.map(this.z, (d) => {
+    return d3.map(this.Z, (d) => {
       return { key: d, color: this.colors(d) };
     });
   }
@@ -336,9 +347,6 @@ export class LineChart {
         z: d.z,
         dx: this.x(d.x),
         dy: this.y(d.y),
-        // fx: this.formatX(d.x),
-        // fy: this.formatY(d.y),
-        // fz: this.formatZ(d.z),
       };
 
       if (move) {

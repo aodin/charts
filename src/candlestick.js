@@ -33,10 +33,11 @@ function signOf(d) {
   return 1 + Math.sign(d.o - d.c);
 }
 
-function barClass(d) {
-  // Append a class to the bar depending on its delta
-  const c = ["up", "even", "down"][signOf(d)];
-  return ["bar", c].join(" ");
+const classes = ["up", "even", "down"];
+
+function deltaClass(d) {
+  // Return's a class depending on the day's delta
+  return classes[signOf(d)];
 }
 
 function zoomRange(domain, width, start, end) {
@@ -86,6 +87,14 @@ export class Candlestick {
       VOLUME_AXIS_RIGHT: true,
       HIDE_VOLUME_AXIS: false,
       VOLUME_TICK_COUNT: 1,
+
+      // Additional layout padding
+      // TODO Specify an additional layout?
+      MARGIN_RIGHT: 10,
+      MARGIN_LEFT: 10,
+      MARGIN_LABEL: 10,
+      MARGIN_AXES: 5,
+      MARGIN_TICK: 2,
     };
 
     // Get data in a {x, o, h, l, c, v} format
@@ -172,7 +181,7 @@ export class Candlestick {
   get priceTickFormat() {
     // Linear axes can use the priceFormat directly, but log axes need additional config
     if (this.config.LOG_Y) {
-      const numTicks = d3.max([this.scaleLinear.ticks().length, 5]);
+      const numTicks = d3.max([this.scaleLinear.ticks().length, 2]);
       return this.scaleLog.tickFormat(numTicks, this.priceFormat);
     } else {
       return this.priceFormat;
@@ -187,7 +196,7 @@ export class Candlestick {
   }
 
   get gridWidth() {
-    return -this.layout.innerWidth - 5;
+    return -this.layout.innerWidth - this.config.MARGIN_AXES;
   }
 
   get wickThickness() {
@@ -224,7 +233,7 @@ export class Candlestick {
         this.scaleVolume.copy(),
         volume,
       );
-      this.layout.pad.right = volWidth + 5;
+      this.layout.pad.right = volWidth + this.config.MARGIN_RIGHT;
     }
 
     let domainY = extentData(this.data);
@@ -255,10 +264,10 @@ export class Candlestick {
     // Left pad the the y-axis labels
     // TODO Option for additional padding
     if (this.config.PRICE_AXIS_RIGHT) {
-      this.layout.pad.left = 10;
-      this.layout.pad.right = labelWidthY + 10;
+      this.layout.pad.left = this.config.MARGIN_LEFT;
+      this.layout.pad.right = labelWidthY + this.config.MARGIN_RIGHT;
     } else {
-      this.layout.pad.left = labelWidthY + 10;
+      this.layout.pad.left = labelWidthY + this.config.MARGIN_LEFT;
     }
 
     // Create a clip path for the inner data element to hide any overflow content
@@ -294,7 +303,7 @@ export class Candlestick {
       this.scaleX.copy(),
       dates,
     );
-    this.labelWidthX = labelWidthX + 5;
+    this.labelWidthX = labelWidthX + this.config.MARGIN_LABEL;
     const filteredX = filterTicks(this.X, this.layout, this.labelWidthX);
 
     // Reset the date formatter
@@ -310,21 +319,20 @@ export class Candlestick {
       .tickFormat(dates)
       .tickSize(3);
 
-    let yAxisTransform = "transform(0,0)";
+    let yTransform = "transform(0,0)";
     if (this.config.PRICE_AXIS_RIGHT) {
-      // TODO Why the +5?
-      yAxisTransform = `translate(${this.layout.innerWidth + 5},0)`;
+      yTransform = `translate(${this.layout.innerWidth + this.config.MARGIN_AXES},0)`;
     }
 
     this.gPrice = this.inner
       .append("g")
-      .attr("transform", yAxisTransform)
+      .attr("transform", yTransform)
       .attr("class", "y axis")
       .call(axisY.tickSize(0));
 
     this.grid = this.inner
       .append("g")
-      .attr("transform", yAxisTransform)
+      .attr("transform", yTransform)
       .attr("class", "grid")
       .call(axisY.tickSize(this.gridWidth));
 
@@ -335,18 +343,21 @@ export class Candlestick {
       .attr("class", "x axis")
       .attr(
         "transform",
-        `translate(${bandPad + 0.5},${this.layout.innerHeight + 2})`,
+        `translate(${bandPad + 0.5},${this.layout.innerHeight + this.config.MARGIN_TICK})`,
       )
       .call(this.axisX);
 
-    this.candles = this.inner
+    this.price = this.inner.append("g").attr("class", "price");
+
+    this.candles = this.price
       .append("g")
       .attr("clip-path", "url(#inner-clip-path)")
-      .attr("stroke", "currentColor")
       .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
+      .attr("stroke", "currentColor")
       .selectAll("g")
       .data(this.data)
       .join("g")
+      .attr("class", deltaClass)
       .attr(
         "transform",
         (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
@@ -354,7 +365,6 @@ export class Candlestick {
 
     this.wicks = this.candles
       .append("line")
-      .attr("stroke", "currentColor")
       .attr("stroke-width", this.wickThickness)
       .attr("class", "wick")
       .attr("y1", this.scaleY(minY))
@@ -363,7 +373,7 @@ export class Candlestick {
     this.bars = this.candles
       .append("line")
       .attr("stroke-width", this.scaleX.bandwidth())
-      .attr("class", (d) => barClass(d))
+      .attr("class", "bar")
       .attr("y1", this.scaleY(minY))
       .attr("y2", this.scaleY(minY));
 
@@ -385,7 +395,10 @@ export class Candlestick {
     this.gVolume = this.volume
       .append("g")
       .attr("class", "v axis")
-      .attr("transform", `translate(${this.layout.innerWidth + 2},0)`)
+      .attr(
+        "transform",
+        `translate(${this.layout.innerWidth + this.config.MARGIN_TICK},0)`,
+      )
       .call(this.axisVolume)
       .attr("visibility", this.volumeAxesVisibility);
 
@@ -407,7 +420,7 @@ export class Candlestick {
       .attr("y1", this.scaleVolume(0))
       .attr("y2", this.scaleVolume(0))
       .attr("stroke-width", this.scaleX.bandwidth())
-      .attr("class", (d) => barClass(d));
+      .attr("class", deltaClass);
 
     // Brush for zoom
     this.brush = d3
@@ -477,7 +490,7 @@ export class Candlestick {
       .duration(this.config.DURATION_MS)
       .attr(
         "transform",
-        `translate(${bandPad + 0.5},${this.layout.innerHeight + 2})`,
+        `translate(${bandPad + 0.5},${this.layout.innerHeight + this.config.MARGIN_TICK})`,
       )
       .call(this.axisX);
 
