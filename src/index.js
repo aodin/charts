@@ -13,3 +13,4 @@ export * from "./pie";
 export * from "./throttle";
 export * from "./ticks";
 export * from "./timeseries";
+export * from "./zoom";

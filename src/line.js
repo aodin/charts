@@ -103,15 +103,6 @@ export class LineChart {
     );
     return this.useDiscreteScheme(colors);
   }
-
-  zoomExtent(min, max) {
-    this.config.ZOOM_EXTENT = [min, max];
-    return this;
-  }
-
-  disableZoom() {
-    return this.zoomExtent(1, 1);
-  }
   /* End config chained methods */
 
   get legend() {
@@ -127,9 +118,10 @@ export class LineChart {
   }
 
   get xScale() {
+    // Never re-calculate the x-axis
     return d3
       .scaleLinear()
-      .domain(d3.extent(d3.map(this.visibleData, (d) => d.x)))
+      .domain(d3.extent(d3.map(this.data, (d) => d.x)))
       .range([0, this.layout.innerWidth]);
   }
 
@@ -140,18 +132,16 @@ export class LineChart {
       .range([this.layout.innerHeight, 0]);
   }
 
-  get zoomIsDisabled() {
-    return this.config.ZOOM_EXTENT[0] === 1 && this.config.ZOOM_EXTENT[1] === 1;
-  }
-
   xAxis(g, x) {
     g.call(d3.axisBottom(x).tickSize(3).tickFormat(this.xFormat));
   }
 
   yAxis(g, y) {
-    g.call(
-      d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(this.yFormat),
-    );
+    g.call(d3.axisLeft(y).tickSize(0).tickFormat(this.yFormat));
+  }
+
+  grid(g, x, y) {
+    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
   }
 
   render(selector) {
@@ -163,19 +153,19 @@ export class LineChart {
     // 2. HTML element that has an intrinsic width - an SVG element will be created
     [this.svg, this.layout] = layoutSVG(selector, this.config);
 
-    const x = this.xScale;
-    const y = this.yScale;
+    this.x = this.xScale;
+    this.y = this.yScale;
 
     const [xLabelWidth, xLabelHeight] = maxLabelSize(
       this.layout,
-      x,
+      this.x,
       this.xFormat,
     );
     this.layout.pad.bottom = d3.max([this.layout.pad.bottom, xLabelHeight]);
 
     const [yLabelWidth, yLabelHeight] = maxLabelSize(
       this.layout,
-      y,
+      this.y,
       this.yFormat,
     );
     this.layout.pad.left = d3.max([this.layout.pad.left, yLabelWidth]);
@@ -196,9 +186,18 @@ export class LineChart {
         "transform",
         `translate(${this.layout.pad.left},${this.layout.innerHeight + this.layout.pad.top})`,
       );
+
     this.gy = this.svg
       .append("g")
       .attr("class", "y axis")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
+      );
+
+    this.gGrid = this.svg
+      .append("g")
+      .attr("class", "grid")
       .attr(
         "transform",
         `translate(${this.layout.pad.left},${this.layout.pad.top})`,
@@ -210,8 +209,8 @@ export class LineChart {
       .attr(
         "transform",
         `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
-      )
-      .attr("clip-path", "url(#inner-clip-path)");
+      );
+    // .attr("clip-path", "url(#inner-clip-path)");
 
     const grouping = d3.group(this.data, (d) => d.z);
 
@@ -223,37 +222,53 @@ export class LineChart {
       .data(grouping)
       .join("path");
 
-    const zoomed = ({ transform }) => {
-      this.x = transform.rescaleX(x).interpolate(d3.interpolateRound);
-      this.y = transform.rescaleY(y).interpolate(d3.interpolateRound);
-      this.update(this.x, this.y);
-    };
-
-    this.zoom = d3
-      .zoom()
-      .scaleExtent(this.config.ZOOM_EXTENT)
-      .on("zoom", zoomed.bind(this));
-
     // Dot - shows nearest point during pointer events
     this.dot = gInner.append("g").attr("class", "dot").style("display", "none");
     this.circle = this.dot.append("circle").attr("r", this.config.DOT_RADIUS);
 
-    this.reset();
+    // Set an initial zero state
+    this.zeroX = d3
+      .scaleLinear()
+      .domain(d3.extent(d3.map(this.visibleData, (d) => d.x)))
+      .range([0, 0]);
+
+    this.zeroY = d3
+      .scaleLinear()
+      .domain(d3.extent(d3.map(this.visibleData, (d) => d.y)))
+      .range([this.layout.innerHeight, this.layout.innerHeight]);
+
+    // this.gx.call(this.xAxis.bind(this), this.x);
+    // this.gy.call(this.yAxis.bind(this), this.zeroY);
+    // this.gGrid.call(this.grid.bind(this), this.zeroX, this.zeroY);
+
+    this.update(this.x, this.zeroY, 0, true);
+    this.update(this.x, this.y, this.config.DURATION_MS, true);
   }
 
-  update(x, y) {
+  update(x, y, duration = 0, stroke = false) {
     // Hide the chart if there's no visible data
     if (!this.visibleData.length) {
-      this.gx.attr("opacity", 0.0);
-      this.gy.attr("opacity", 0.0);
-      this.paths.attr("opacity", 0.0);
-      return;
+      // Set axes to zero
+      y = this.zeroY;
+    }
+
+    if (stroke) {
+      const lengths = d3.map(this.paths, (elem) => elem.getTotalLength());
+      this.paths
+        .attr("stroke", null)
+        .attr("stroke-dasharray", (d, i) => `${lengths[i]} ${lengths[i]}`)
+        .attr("stroke-dashoffset", (d, i) => lengths[i]);
     }
 
     // Re-draw the chart with the new x and y scales
     this.hideDot();
-    this.gx.attr("opacity", 1.0).call(this.xAxis.bind(this), x);
-    this.gy.attr("opacity", 1.0).call(this.yAxis.bind(this), y);
+    this.svg
+      .transition()
+      .duration(duration)
+      .attr("opacity", this.visibleData.length ? 1.0 : 0.0);
+    this.gx.transition().duration(duration).call(this.xAxis.bind(this), x);
+    this.gy.transition().duration(duration).call(this.yAxis.bind(this), y);
+    this.gGrid.transition().duration(duration).call(this.grid.bind(this), x, y);
 
     // Plot the line
     const line = d3
@@ -264,24 +279,16 @@ export class LineChart {
       .y((d) => y(d.y));
 
     this.paths
+      .transition()
+      .duration(duration)
+      .attr("stroke-dashoffset", 0)
       .attr("d", ([, I]) => line(I))
       .attr("stroke", ([z]) => this.colors(z))
       .attr("class", ([z]) => z)
       .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
   }
 
-  reset() {
-    const z = this.svg
-      .call(this.zoom)
-      .call(this.zoom.transform, d3.zoomIdentity);
-    if (this.zoomIsDisabled) {
-      // Disable zoom completely if requested
-      z.on("mousedown.zoom", null)
-        .on("touchstart.zoom", null)
-        .on("touchmove.zoom", null)
-        .on("touchend.zoom", null);
-    }
-  }
+  reset() {}
 
   placeDot(index) {
     // Place a dot at the given index
@@ -389,7 +396,7 @@ export class LineChart {
     // Recalculate the scales based on the non-hidden items
     this.x = this.xScale;
     this.y = this.yScale;
-    this.update(this.x, this.y);
+    this.update(this.x, this.y, this.config.DURATION_MS);
   }
 
   // TODO method to append a data point
@@ -401,10 +408,11 @@ export function Line(data, parser) {
 }
 
 class TimeSeriesChart extends LineChart {
+  // Never re-calculate the x-axis
   get xScale() {
     return d3
       .scaleUtc()
-      .domain(d3.extent(d3.map(this.visibleData, (d) => d.x)))
+      .domain(d3.extent(d3.map(this.data, (d) => d.x)))
       .range([0, this.layout.innerWidth]);
   }
 }

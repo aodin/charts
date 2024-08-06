@@ -15,8 +15,11 @@ h1 {
 .y.axis line {
   stroke: #444;
 }
-.axis .domain {
+.domain {
   display: none;
+}
+.grid {
+  opacity: 0.4;
 }
 
 /* Legend */
@@ -69,7 +72,6 @@ h1 {
     width: 10px;
   }
 }
-
     </style>
   </head>
   <body>
@@ -109,8 +111,7 @@ const data = [
 ];
 const line = new charts.TimeSeries(data, charts.parseTimeSeries3dArray)
   .screenHeightPercent(0.7)
-  .disableZoom()
-  .useContinuousScheme(d3.interpolatePlasma);
+  .useContinuousScheme(d3.interpolatePlasma, 0.4, 0.95);
 
 const legend = document.querySelector("#legend");
 const template = document.querySelector("#legendTemplate");
