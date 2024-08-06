@@ -299,7 +299,7 @@ export class LineChart {
   noHighlight() {
     // Reset all lines to default
     this.paths
-      .attr("opacity", 1.0)
+      .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0))
       .attr("stroke-width", this.config.STROKE_WIDTH);
   }
 
@@ -324,12 +324,12 @@ export class LineChart {
     const pointermove = (evt) => {
       const [xm, ym] = d3.pointer(evt);
       const points = d3.map(this.data, (d) => {
-        if (this.hidden.has(d.z)) return Infinity;
+        if (this.hidden.has(d.z)) return null;
         return Math.hypot(this.x(d.x) - xm, this.y(d.y) - ym);
       });
 
       const index = d3.leastIndex(points);
-      if (index === -1 || points[index] === Infinity) return;
+      if (index === -1 || points[index] === null) return;
 
       // Exit early if no point was found
       if (typeof index === "undefined") return;
