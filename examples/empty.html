@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>@aodin/charts - Empty</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+body {
+  font-family: sans-serif;
+}
+    </style>
+  </head>
+  <body>
+    <div id="menu">
+      <div id="title">
+        <h1>Candlestick</h1>
+        <button id="log">Log</button>
+        <button id="linear">Linear</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div id="hud"></div>
+    </div>
+    <div id="chart"></div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="../dist/candlestick.min.js"></script>
+    <template id="hudTemplate">
+      <p class="date"></p>
+      <div>
+        <span class="symbol"></span>
+        <strong class="delta"></strong>
+      </div>
+    </template>
+    <script type="text/javascript">
+const data = [];
+const empty = charts.OHLCV(data)
+empty.render("#chart");
+    </script>
+  </body>
+</html>

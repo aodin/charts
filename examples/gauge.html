@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>@aodin/charts - Pie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+body {
+  font-family: sans-serif;
+  color: white;
+  background-color: black;
+}
+h1 {
+  font-weight: normal;
+}
+.display text {
+  fill: white;
+  text-anchor: middle;
+  alignment-baseline: middle;
+  font-size: 80px;
+}
+    </style>
+  </head>
+  <body>
+    <h1>Gauge Example</h1>
+    <div id="chart">
+      <svg width="400" height="400"></svg>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="../dist/pie.min.js"></script>
+    <script type="text/javascript">
+const data = [
+  [60, "A"],
+  [40, "B"],
+  [20, "C"],
+  [50, "D"],
+  [30, "E"],
+];
+const pie = charts.Gauge(data, charts.parse2dArray)
+  .useDiscreteScheme(d3.schemeTableau10);
+pie.render("#chart svg");
+
+
+function onEnter(d, evt) {
+  pie.enlarge(d.data.z, true);
+  pie.display = d.data.y;
+}
+function onLeave(d, evt) {
+  pie.display = "";
+  pie.reset();
+}
+pie.onEvent(onEnter, onLeave);
+
+    </script>
+  </body>
+</html>

@@ -154,13 +154,15 @@ export class PieChart {
     [this.svg, this.layout] = layoutSVG(selector, this.config);
 
     // By default, show the latest quarter of data
-    // TODO Option to change default
+    // TODO Option to change default - or just use update()?
     const latest = this.X[this.X.length - 1];
 
     this.pie = d3
       .pie()
       .sort(null)
-      .value((d) => d.y);
+      .value((d) => d.y)
+      .startAngle(this.config.START_ANGLE)
+      .endAngle(this.config.END_ANGLE);
 
     this.arc = d3
       .arc()
@@ -178,6 +180,13 @@ export class PieChart {
     this.slices = this.svg
       .append("g")
       .attr("transform", `translate(${midX},${midY})`);
+
+    // Center value display
+    this.gDisplay = this.svg
+      .append("g")
+      .attr("transform", `translate(${midX},${midY})`)
+      .attr("class", "display")
+      .append("text");
 
     // Optional label
     // this.slices
@@ -215,8 +224,10 @@ export class PieChart {
     // Enter new arcs
     path
       .enter()
-      .append("path")
+      .append("g")
+      .attr("class", "slice")
       .attr("opacity", 1.0)
+      .append("path")
       .attr("fill", (d) => this.colors(d.data.z))
       .each(function (d) {
         this._current = d;
@@ -235,6 +246,10 @@ export class PieChart {
   getLabel(d) {
     // Custom method to return a label from the joined pie data
     return "";
+  }
+
+  set display(value) {
+    this.gDisplay.text(value);
   }
 
   enlarge(z) {
@@ -256,7 +271,7 @@ export class PieChart {
 
   noHighlight() {
     this.slices
-      .selectAll("path")
+      .selectAll("g")
       .transition()
       .duration(this.config.DURATION_MS)
       .attr("opacity", 1.0);
@@ -264,7 +279,7 @@ export class PieChart {
 
   highlight(z) {
     this.slices
-      .selectAll("path")
+      .selectAll("g")
       .transition()
       .duration(this.config.DURATION_MS)
       .attr("opacity", (d) =>
@@ -301,5 +316,8 @@ export function Pie(data, parser) {
 }
 
 export function Gauge(data, parser) {
-  return new PieChart(data, parser).angles(-Math.PI * 0.65, Math.PI * 0.65);
+  return new PieChart(data, parser)
+    .angles(-Math.PI * 0.65, Math.PI * 0.65)
+    .radii(0.5, 0.8)
+    .hoverRadii(0.55, 0.9);
 }
