@@ -19,7 +19,7 @@ h1 {
   display: none;
 }
 .grid {
-  opacity: 0.4;
+  opacity: 0.2;
 }
 
 /* Legend */
@@ -111,6 +111,7 @@ const data = [
 ];
 const line = new charts.TimeSeries(data, charts.parseTimeSeries3dArray)
   .screenHeightPercent(0.7)
+  .hideIfEmpty()
   .useContinuousScheme(d3.interpolatePlasma, 0.4, 0.95);
 
 const legend = document.querySelector("#legend");

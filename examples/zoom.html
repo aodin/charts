@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>@aodin/charts - Line With Zoom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+body {
+  font-family: sans-serif;
+  color: white;
+  background-color: black;
+}
+h1 {
+  font-weight: normal;
+}
+.y.axis line {
+  stroke: #444;
+}
+.axis .domain {
+  display: none;
+}
+    </style>
+  </head>
+  <body>
+    <div class="title">
+      <h1>Line Chart With Zoom Example</h1>
+      <button id="reset">Reset</button>
+    </div>
+    <div id="chart"></div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="../dist/zoom.min.js"></script>
+    <script type="text/javascript">
+const data = [
+  [1, 100, "A"],
+  [2, 110, "A"],
+  [3, 120, "A"],
+  [4, 125, "A"],
+  [5, 115, "A"],
+  [6, 110, "A"],
+  [1, 20, "B"],
+  [2, 50, "B"],
+  [3, 100, "B"],
+  [4, 140, "B"],
+  [5, 120, "B"],
+  [6, 50, "B"],
+  [1, 0, "C"],
+  [4, 10, "C"],
+  [5, 10, "C"],
+  [6, 12, "C"],
+];
+const line = new charts.LineWithZoom(data, charts.parse3dArray)
+  .screenHeightPercent(0.8)
+  .zoomExtent(1, 16)
+  .useDiscreteScheme(d3.schemeTableau10);
+
+line.yFormat = d3.format(".2f");
+line.xFormat = d3.format(".2f");
+
+line.render("#chart");
+line.onEvent(
+  (data) => line.highlight(data.z),
+  () => line.noHighlight(),
+);
+
+document.getElementById("reset").addEventListener("click", () => line.reset());
+    </script>
+  </body>
+</html>
