@@ -46,6 +46,9 @@ export class LineChart {
       DOT_RADIUS: 3.0, // Radius of the dot
       HIDE_EMPTY_CHART: false,
       COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
+
+      // Additional margins
+      MARGIN_TICK: 3,
     };
 
     // Items can be dynamically hidden from the chart
@@ -142,6 +145,11 @@ export class LineChart {
       .range([this.layout.innerHeight, 0]);
   }
 
+  defined(d, i) {
+    // By default, all points are considered to be defined
+    return true;
+  }
+
   xAxis(g, x) {
     g.call(d3.axisBottom(x).tickSize(3).tickFormat(this.xFormat));
   }
@@ -163,30 +171,32 @@ export class LineChart {
     // 2. HTML element that has an intrinsic width - an SVG element will be created
     [this.svg, this.layout] = layoutSVG(selector, this.config);
 
-    this.x = this.xScale;
-    this.y = this.yScale;
-
+    // Scales are needed to calculate the axes size, which may change layout and
+    // require scales to be re-calculated
     const [xLabelWidth, xLabelHeight] = maxLabelSize(
       this.layout,
-      this.x,
+      this.xScale,
       this.xFormat,
     );
     this.layout.pad.bottom = d3.max([this.layout.pad.bottom, xLabelHeight]);
 
     const [yLabelWidth, yLabelHeight] = maxLabelSize(
       this.layout,
-      this.y,
+      this.yScale,
       this.yFormat,
     );
-    // TODO Config option for additional tick padding
-    this.layout.pad.left = d3.max([this.layout.pad.left, yLabelWidth + 3]);
+    this.layout.pad.left = d3.max([
+      this.layout.pad.left,
+      yLabelWidth + this.config.MARGIN_TICK + 5,
+    ]);
+
+    this.x = this.xScale;
+    this.y = this.yScale;
 
     // Start with the SVG visible - this can be set to 0 for "fade in"
     this.svg.attr("opacity", 1.0);
 
     // Create a clip path to hide any overflow content
-    // We could also set this to the inner element, but that would hide the
-    // overflow from the dot placement
     this.svg
       .append("defs")
       .append("clipPath")
@@ -205,12 +215,13 @@ export class LineChart {
         `translate(${this.layout.pad.left},${this.layout.innerHeight + this.layout.pad.top})`,
       );
 
+    // TODO Config option for additional tick padding
     this.gy = this.svg
       .append("g")
       .attr("class", "y axis")
       .attr(
         "transform",
-        `translate(${this.layout.pad.left - 3},${this.layout.pad.top})`,
+        `translate(${this.layout.pad.left - this.config.MARGIN_TICK},${this.layout.pad.top})`,
       );
 
     this.gGrid = this.svg
@@ -245,31 +256,24 @@ export class LineChart {
 
     this.previousUpdate = false;
 
-    // Set an initial zero state
-    // this.zeroX = d3
-    //   .scaleLinear()
-    //   .domain(d3.extent(d3.map(this.visibleData, (d) => d.x)))
-    //   .range([0, 0]);
-
+    // Set an initial zero state for the y-axis
     this.zeroY = d3
       .scaleLinear()
-      .domain(d3.extent(d3.map(this.visibleData, (d) => d.y)))
+      .domain(d3.extent(d3.map(this.data, (d) => d.y)))
       .range([this.layout.innerHeight, this.layout.innerHeight]);
 
     // Set initial state
-    this.gx.call(this.xAxis.bind(this), this.x);
-    // this.gy.call(this.yAxis.bind(this), this.zeroY);
+    this.gx.call(this.xAxis.bind(this), this.x).attr("opacity", 1.0);
     this.gy.call(this.yAxis.bind(this), this.y).attr("opacity", 1.0);
     this.gGrid.call(this.grid.bind(this), this.x, this.y);
-    // this.gGrid.call(this.grid.bind(this), this.x, this.zeroY);
+
+    // TODO Option to set initial Y to zero? Doesn't work well with stroke animation
 
     const line = d3
       .line()
       .digits(2)
-      // .defined((d) => ) // TODO defined function
       .x((d) => this.x(d.x))
       .y((d) => this.y(d.y));
-    // .y((d) => this.zeroY(d.y));
 
     this.paths
       .attr("d", ([, I]) => line(I))
@@ -280,53 +284,61 @@ export class LineChart {
     const lengths = d3.map(this.paths, (elem) => getLength(elem));
 
     this.paths
-      .attr("stroke-dasharray", (d, i) => {
-        return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
-      })
-      .attr("stroke-dashoffset", (d, i) => lengths[i]);
+      .attr("stroke-dasharray", "1 0")
+      // .attr("stroke-dasharray", (d, i) => {
+      //   return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
+      // })
+      .attr("stroke-dashoffset", (d, i) => 0);
+    // .attr("stroke-dashoffset", (d, i) => lengths[i]);
 
-    // this.update(this.x, this.zeroY, 0, true);
     this.update(this.x, this.y);
   }
 
   update(x, y) {
     if (!this.visibleData.length) {
-      // Set axes to zero
+      // Set y-axis to zero
       y = this.zeroY;
     }
 
-    const duration = this.config.DURATION_MS;
-
-    // Hide the chart if there's no visible data
     this.hideDot();
 
+    // Option to hide the chart if there's no visible data
     if (this.config.HIDE_EMPTY_CHART) {
       this.svg
         .transition()
-        .duration(duration)
+        .duration(this.config.DURATION_MS)
         .attr("opacity", this.visibleData.length ? 1.0 : 0.0);
     }
 
     // Re-draw the chart with the new x and y scales
-    // this.gx.transition().duration(duration).call(this.xAxis.bind(this), x);
+    // NOTE: with current setup, x-axis doesn't need to be updated
+    this.gx
+      .transition()
+      .duration(this.config.DURATION_MS)
+      .call(this.xAxis.bind(this), x);
+
     this.gy
       .transition()
-      .duration(duration)
+      .duration(this.config.DURATION_MS)
       .call(this.yAxis.bind(this), y)
       .attr("opacity", this.visibleData.length ? 1.0 : 0.0);
-    this.gGrid.transition().duration(duration).call(this.grid.bind(this), x, y);
+
+    this.gGrid
+      .transition()
+      .duration(this.config.DURATION_MS)
+      .call(this.grid.bind(this), x, y);
 
     // Plot the line
     const line = d3
       .line()
       .digits(2)
-      // .defined((d) => ) // TODO defined function
+      .defined(this.defined)
       .x((d) => x(d.x))
       .y((d) => y(d.y));
 
     this.paths
       .transition()
-      .duration(duration)
+      .duration(this.config.DURATION_MS)
       .attr("d", ([, I]) => line(I))
       // .attr("stroke-dasharray", (d, i) => `${lengths[i]} ${lengths[i]}`)
       .attr("stroke-dashoffset", 0)
@@ -337,8 +349,6 @@ export class LineChart {
     }
     this.previousUpdate = true;
   }
-
-  reset() {}
 
   placeDot(index) {
     // Place a dot at the given index
@@ -379,7 +389,10 @@ export class LineChart {
 
     // Determine the closest point to the cursor
     const pointermove = (evt) => {
-      const [xm, ym] = d3.pointer(evt);
+      let [xm, ym] = d3.pointer(evt);
+      // X and y scales use the inner element, which is padded
+      xm -= this.layout.pad.left;
+      ym -= this.layout.pad.top;
       const points = d3.map(this.data, (d) => {
         if (this.hidden.has(d.z)) return null;
         return Math.hypot(this.x(d.x) - xm, this.y(d.y) - ym);
@@ -448,16 +461,13 @@ export class LineChart {
     this.y = this.yScale;
     this.update(this.x, this.y, this.config.DURATION_MS);
   }
-
-  // TODO method to append a data point
-  append() {}
 }
 
 export function Line(data, parser) {
   return new LineChart(data, parser);
 }
 
-class TimeSeriesChart extends LineChart {
+export class TimeSeriesChart extends LineChart {
   // Never re-calculate the x-axis
   get xScale() {
     return d3

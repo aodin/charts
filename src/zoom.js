@@ -400,7 +400,7 @@ export function LineWithZoom(data, parser) {
   return new LineChartWithZoom(data, parser);
 }
 
-class TimeSeriesChartWithZoom extends LineChartWithZoom {
+export class TimeSeriesChartWithZoom extends LineChartWithZoom {
   get xScale() {
     return d3
       .scaleUtc()
