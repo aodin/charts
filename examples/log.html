@@ -38,6 +38,7 @@ const ohlcv = charts.OHLCV(data, charts.parseVerboseObject)
   .screenHeightPercent(0.8)
   .defaultLog()
   .priceAxisRight()
+  .doNotRescaleY()
   .hideVolumeAxis();
 
 ohlcv.render("#chart");

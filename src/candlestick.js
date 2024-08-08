@@ -87,6 +87,7 @@ export class Candlestick {
       VOLUME_AXIS_RIGHT: true,
       HIDE_VOLUME_AXIS: false,
       VOLUME_TICK_COUNT: 1,
+      RESCALE_Y: true,
 
       // Additional layout padding
       // TODO Specify an additional layout?
@@ -118,6 +119,12 @@ export class Candlestick {
 
   noAnimation() {
     return this.animationDuration(0);
+  }
+
+  doNotRescaleY() {
+    // Do not rescale the Y axis on zoom
+    this.config.RESCALE_Y = false;
+    return this;
   }
 
   setBandPadding(value) {
@@ -464,10 +471,11 @@ export class Candlestick {
     this.scaleX.range(zRange);
 
     // Update the axisY according to the new min and max of the data
-    let domainY = extentData(this.data, this.start, this.end);
-
-    this.scaleLinear.domain(domainY);
-    this.scaleLog.domain(domainY); // TODO .nice() can be called here
+    if (this.config.RESCALE_Y) {
+      let domainY = extentData(this.data, this.start, this.end);
+      this.scaleLinear.domain(domainY);
+      this.scaleLog.domain(domainY); // TODO .nice() can be called here
+    }
 
     this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
     const axisY = this.priceAxisIndex;
