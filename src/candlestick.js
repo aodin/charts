@@ -236,9 +236,11 @@ export class Candlestick {
     // Right pad the volume ticks
     if (this.volumeAxesIsVisible) {
       const [volWidth, volHeight] = maxLabelSize(
+        this.svg,
         this.layout,
         this.scaleVolume.copy(),
         volume,
+        "v axis",
       );
       this.layout.pad.right = volWidth + this.config.MARGIN_RIGHT;
     }
@@ -257,14 +259,18 @@ export class Candlestick {
 
     // Get the max tick label width for the y-axis on both linear and log scales
     const [logWidth, logHeight] = maxLabelSize(
+      this.svg,
       this.layout,
       this.scaleLog.copy(),
       this.priceFormat,
+      "y axis",
     );
     const [linearWidth, linearHeight] = maxLabelSize(
+      this.svg,
       this.layout,
       this.scaleLinear.copy(),
       this.priceFormat,
+      "y axis",
     );
     const labelWidthY = d3.max([logWidth, linearWidth]);
 
@@ -272,9 +278,15 @@ export class Candlestick {
     // TODO Option for additional padding
     if (this.config.PRICE_AXIS_RIGHT) {
       this.layout.pad.left = this.config.MARGIN_LEFT;
-      this.layout.pad.right = labelWidthY + this.config.MARGIN_RIGHT;
+      this.layout.pad.right = d3.max([
+        this.layout.pad.right,
+        labelWidthY + this.config.MARGIN_RIGHT,
+      ]);
     } else {
-      this.layout.pad.left = labelWidthY + this.config.MARGIN_LEFT;
+      this.layout.pad.left = d3.max([
+        this.layout.pad.left,
+        labelWidthY + this.config.MARGIN_LEFT,
+      ]);
     }
 
     // Create a clip path for the inner data element to hide any overflow content
@@ -306,9 +318,11 @@ export class Candlestick {
 
     // Get the max tick label width for the x-axis
     const [labelWidthX, labelHeight] = maxLabelSize(
+      this.svg,
       this.layout,
       this.scaleX.copy(),
       dates,
+      "x axis",
     );
     this.labelWidthX = labelWidthX + this.config.MARGIN_LABEL;
     const filteredX = filterTicks(this.X, this.layout, this.labelWidthX);

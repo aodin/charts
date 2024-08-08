@@ -175,6 +175,7 @@ export class LineChart {
       this.layout,
       this.xScale,
       this.xFormat,
+      "x axis",
     );
     this.layout.pad.bottom = d3.max([this.layout.pad.bottom, xLabelHeight]);
 
@@ -183,6 +184,7 @@ export class LineChart {
       this.layout,
       this.yScale,
       this.yFormat,
+      "y axis",
     );
 
     if (this.config.Y_AXIS_RIGHT) {
@@ -291,6 +293,7 @@ export class LineChart {
     const line = d3
       .line()
       .digits(2)
+      .defined(this.defined)
       .x((d) => this.x(d.x))
       .y((d) => this.y(d.y));
 

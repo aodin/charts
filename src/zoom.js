@@ -34,13 +34,15 @@ export class LineChartWithZoom {
     this.config = {
       SCREEN_HEIGHT_PERCENT: 0.5,
       DURATION_MS: 500,
-      Y_AXIS_RIGHT: false,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       HIGHLIGHT_STROKE_WIDTH: 2.0, // Width when highlighted
       STROKE_WIDTH: 1.5, // Width when not highlighted
       DOT_RADIUS: 3.0, // Radius of the dot
       ZOOM_EXTENT: [0.5, 32],
       COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
+
+      // Additional margins
+      MARGIN_TICK: 3,
     };
 
     // Items can be dynamically hidden from the chart
@@ -83,12 +85,6 @@ export class LineChartWithZoom {
 
   noAnimation() {
     return this.animationDuration(0);
-  }
-
-  yAxisRight() {
-    // The y axis ticks and labels will be shown on the right of the chart
-    this.config.Y_AXIS_RIGHT = true;
-    return this;
   }
 
   useDiscreteScheme(scheme) {
@@ -154,6 +150,32 @@ export class LineChartWithZoom {
     );
   }
 
+  updateLayout() {
+    // Scales are needed to calculate the axes size, which may change layout and
+    // require scales to be re-calculated
+    const [xLabelWidth, xLabelHeight] = maxLabelSize(
+      this.svg,
+      this.layout,
+      this.xScale,
+      this.xFormat,
+      "x axis",
+    );
+    this.layout.pad.bottom = d3.max([this.layout.pad.bottom, xLabelHeight]);
+
+    const [yLabelWidth, yLabelHeight] = maxLabelSize(
+      this.svg,
+      this.layout,
+      this.yScale,
+      this.yFormat,
+      "y axis",
+    );
+
+    this.layout.pad.left = d3.max([
+      this.layout.pad.left,
+      yLabelWidth + this.config.MARGIN_TICK + 5,
+    ]);
+  }
+
   render(selector) {
     // If there is no data, do not render
     if (!this.data.length) return;
@@ -163,22 +185,11 @@ export class LineChartWithZoom {
     // 2. HTML element that has an intrinsic width - an SVG element will be created
     [this.svg, this.layout] = layoutSVG(selector, this.config);
 
+    // Create fake axes to measure label sizes and update layout
+    this.updateLayout();
+
     const x = this.xScale;
     const y = this.yScale;
-
-    const [xLabelWidth, xLabelHeight] = maxLabelSize(
-      this.layout,
-      x,
-      this.xFormat,
-    );
-    this.layout.pad.bottom = d3.max([this.layout.pad.bottom, xLabelHeight]);
-
-    const [yLabelWidth, yLabelHeight] = maxLabelSize(
-      this.layout,
-      y,
-      this.yFormat,
-    );
-    this.layout.pad.left = d3.max([this.layout.pad.left, yLabelWidth]);
 
     // Create a clip path for the inner data element to hide any overflow content
     this.svg
@@ -196,6 +207,7 @@ export class LineChartWithZoom {
         "transform",
         `translate(${this.layout.pad.left},${this.layout.innerHeight + this.layout.pad.top})`,
       );
+
     this.gy = this.svg
       .append("g")
       .attr("class", "y axis")
@@ -371,12 +383,19 @@ export class LineChartWithZoom {
   }
 
   hide(...z) {
+    // Add the given z elements to the hidden set
     this.hidden = this.hidden.union(new Set(z));
     this.toggle();
   }
 
   show(...z) {
+    // Remove the given z elements from the hidden set
     this.hidden = this.hidden.difference(new Set(z));
+    this.toggle();
+  }
+
+  hideAll() {
+    this.hidden = new Set(this.Z);
     this.toggle();
   }
 

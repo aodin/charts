@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-export function maxLabelSize(svg, layout, scale, format = null) {
+export function maxLabelSize(svg, layout, scale, format = null, cls = "") {
   // Create a fake axis to test label tick size
   // Does not include the tick size or padding, is just the label width
   // This access should be part of the current chart's selection and have the same
@@ -9,10 +9,10 @@ export function maxLabelSize(svg, layout, scale, format = null) {
     .append("g")
     .attr("width", layout.innerWidth)
     .attr("height", layout.innerHeight)
+    .attr("class", cls)
     .style("visibility", "hidden"); // "display: none" does not work
 
   const axis = d3.axisLeft(scale).tickFormat(format); // Can be null
-
   const g = hidden.call(axis);
 
   // Measure the tick labels
@@ -30,8 +30,7 @@ export function maxLabelSize(svg, layout, scale, format = null) {
     }
   });
 
-  // Remove the axis
-  // hidden.remove();
+  hidden.remove();
   return [width, height];
 }
 
