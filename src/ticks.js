@@ -1,26 +1,19 @@
 import * as d3 from "d3";
 
-/*
-To filter categorical x ticks, we need to:
-1. get the width of the largest x tick label
-2. get the total available width for the axes in the layout
-3. get the interval that will fit that largest label without overlap
-4. filter the available tick labels by the interval
-*/
-
-export function maxLabelSize(layout, scale, format = null) {
+export function maxLabelSize(svg, layout, scale, format = null) {
   // Create a fake axis to test label tick size
-  // Does not include the tick size or padding, is just the label with
-  const hidden = d3
-    .select("body")
-    .append("svg")
+  // Does not include the tick size or padding, is just the label width
+  // This access should be part of the current chart's selection and have the same
+  // class values in order to correctly match any CSS that changes label sizes
+  const hidden = svg
+    .append("g")
     .attr("width", layout.innerWidth)
     .attr("height", layout.innerHeight)
     .style("visibility", "hidden"); // "display: none" does not work
 
   const axis = d3.axisLeft(scale).tickFormat(format); // Can be null
 
-  const g = hidden.append("g").call(axis);
+  const g = hidden.call(axis);
 
   // Measure the tick labels
   const labels = g.selectAll(".tick text");
@@ -38,12 +31,18 @@ export function maxLabelSize(layout, scale, format = null) {
   });
 
   // Remove the axis
-  hidden.remove();
+  // hidden.remove();
   return [width, height];
 }
 
+/*
+In order to filter categorical ticks, we need:
+1. the width of the largest tick label
+2. the total available width for the axes in the layout
+3. the interval that will fit that largest label without overlap
+4. then filter the available tick labels by the interval
+*/
 export function filterTicks(ticks, layout, labelWidth) {
-  // TODO - allow a max to be set?
   const count = parseInt(layout.innerWidth / (labelWidth + 1)) + 1;
   const interval = d3.max([parseInt(Math.ceil(ticks.length / count)), 1]);
   return d3.filter(ticks, (d, i) => i % interval === 0);

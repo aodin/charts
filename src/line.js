@@ -163,7 +163,42 @@ export class LineChart {
   }
 
   grid(g, x, y) {
+    // Separating the grid from the axes allows more control of its positioning
     g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
+  }
+
+  updateLayout() {
+    // Scales are needed to calculate the axes size, which may change layout and
+    // require scales to be re-calculated
+    const [xLabelWidth, xLabelHeight] = maxLabelSize(
+      this.svg,
+      this.layout,
+      this.xScale,
+      this.xFormat,
+    );
+    this.layout.pad.bottom = d3.max([this.layout.pad.bottom, xLabelHeight]);
+
+    const [yLabelWidth, yLabelHeight] = maxLabelSize(
+      this.svg,
+      this.layout,
+      this.yScale,
+      this.yFormat,
+    );
+
+    if (this.config.Y_AXIS_RIGHT) {
+      this.layout.pad.right = d3.max([
+        this.layout.pad.right,
+        yLabelWidth + this.config.MARGIN_TICK + 5,
+      ]);
+      // The default axes has a pretty large left pad - if using a right axes this
+      // left pad can be reduced
+      this.layout.pad.left = 5;
+    } else {
+      this.layout.pad.left = d3.max([
+        this.layout.pad.left,
+        yLabelWidth + this.config.MARGIN_TICK + 5,
+      ]);
+    }
   }
 
   render(selector) {
@@ -175,32 +210,8 @@ export class LineChart {
     // 2. HTML element that has an intrinsic width - an SVG element will be created
     [this.svg, this.layout] = layoutSVG(selector, this.config);
 
-    // Scales are needed to calculate the axes size, which may change layout and
-    // require scales to be re-calculated
-    const [xLabelWidth, xLabelHeight] = maxLabelSize(
-      this.layout,
-      this.xScale,
-      this.xFormat,
-    );
-    this.layout.pad.bottom = d3.max([this.layout.pad.bottom, xLabelHeight]);
-
-    const [yLabelWidth, yLabelHeight] = maxLabelSize(
-      this.layout,
-      this.yScale,
-      this.yFormat,
-    );
-
-    if (this.config.Y_AXIS_RIGHT) {
-      this.layout.pad.right = d3.max([
-        this.layout.pad.right,
-        yLabelWidth + this.config.MARGIN_TICK + 5,
-      ]);
-    } else {
-      this.layout.pad.left = d3.max([
-        this.layout.pad.left,
-        yLabelWidth + this.config.MARGIN_TICK + 5,
-      ]);
-    }
+    // Create fake axes to measure label sizes and update layout
+    this.updateLayout();
 
     this.x = this.xScale;
     this.y = this.yScale;
@@ -267,20 +278,15 @@ export class LineChart {
     this.dot = gInner.append("g").attr("class", "dot").style("display", "none");
     this.circle = this.dot.append("circle").attr("r", this.config.DOT_RADIUS);
 
+    // The initial line drawing animation relies on manipulating stroke attributes,
+    // which can change whenever we redraw lines, so we'll only do the draw animation
+    // once and all subsequent updates will just use a solid stroke
     this.previousUpdate = false;
-
-    // Set an initial zero state for the y-axis
-    this.zeroY = d3
-      .scaleLinear()
-      .domain(d3.extent(d3.map(this.data, (d) => d.y)))
-      .range([this.layout.innerHeight, this.layout.innerHeight]);
 
     // Set initial state
     this.gx.call(this.xAxis.bind(this), this.x).attr("opacity", 1.0);
     this.gy.call(this.yAxis.bind(this), this.y).attr("opacity", 1.0);
     this.gGrid.call(this.grid.bind(this), this.x, this.y);
-
-    // TODO Option to set initial Y to zero? Doesn't work well with stroke animation
 
     const line = d3
       .line()
@@ -297,22 +303,15 @@ export class LineChart {
     const lengths = d3.map(this.paths, (elem) => getLength(elem));
 
     this.paths
-      .attr("stroke-dasharray", "1 0")
-      // .attr("stroke-dasharray", (d, i) => {
-      //   return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
-      // })
-      .attr("stroke-dashoffset", (d, i) => 0);
-    // .attr("stroke-dashoffset", (d, i) => lengths[i]);
+      .attr("stroke-dasharray", (d, i) => {
+        return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
+      })
+      .attr("stroke-dashoffset", (d, i) => lengths[i]);
 
     this.update(this.x, this.y);
   }
 
   update(x, y) {
-    if (!this.visibleData.length) {
-      // Set y-axis to zero
-      y = this.zeroY;
-    }
-
     this.hideDot();
 
     // Option to hide the chart if there's no visible data
@@ -424,12 +423,13 @@ export class LineChart {
 
       const d = this.data[index];
 
-      let data = {
+      // Data the will provided to the callback
+      const data = {
         x: d.x,
         y: d.y,
         z: d.z,
-        dx: this.x(d.x),
-        dy: this.y(d.y),
+        dx: this.x(d.x) + this.layout.pad.left,
+        dy: this.y(d.y) + this.layout.pad.top,
       };
 
       if (move) {
@@ -454,12 +454,19 @@ export class LineChart {
   }
 
   hide(...z) {
+    // Add the given z elements to the hidden set
     this.hidden = this.hidden.union(new Set(z));
     this.toggle();
   }
 
   show(...z) {
+    // Remove the given z elements from the hidden set
     this.hidden = this.hidden.difference(new Set(z));
+    this.toggle();
+  }
+
+  hideAll() {
+    this.hidden = new Set(this.Z);
     this.toggle();
   }
 
@@ -469,10 +476,19 @@ export class LineChart {
   }
 
   toggle() {
-    // Recalculate the scales based on the non-hidden items
-    this.x = this.xScale;
-    this.y = this.yScale;
-    this.update(this.x, this.y, this.config.DURATION_MS);
+    if (this.visibleData.length) {
+      // Recalculate the y-scale based on the non-hidden items
+      this.y = this.yScale;
+    } else {
+      // Set y-axis to zero
+      // We would need the last y-axis domain in order to prevent tick labels
+      // from changing during this transition
+      this.y = d3
+        .scaleLinear()
+        .domain(this.y.domain())
+        .range([this.layout.innerHeight, this.layout.innerHeight]);
+    }
+    this.update(this.x, this.y);
   }
 }
 
