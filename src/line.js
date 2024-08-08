@@ -155,7 +155,11 @@ export class LineChart {
   }
 
   yAxis(g, y) {
-    g.call(d3.axisLeft(y).tickSize(0).tickFormat(this.yFormat));
+    if (this.config.Y_AXIS_RIGHT) {
+      g.call(d3.axisRight(y).tickSize(0).tickFormat(this.yFormat));
+    } else {
+      g.call(d3.axisLeft(y).tickSize(0).tickFormat(this.yFormat));
+    }
   }
 
   grid(g, x, y) {
@@ -185,10 +189,18 @@ export class LineChart {
       this.yScale,
       this.yFormat,
     );
-    this.layout.pad.left = d3.max([
-      this.layout.pad.left,
-      yLabelWidth + this.config.MARGIN_TICK + 5,
-    ]);
+
+    if (this.config.Y_AXIS_RIGHT) {
+      this.layout.pad.right = d3.max([
+        this.layout.pad.right,
+        yLabelWidth + this.config.MARGIN_TICK + 5,
+      ]);
+    } else {
+      this.layout.pad.left = d3.max([
+        this.layout.pad.left,
+        yLabelWidth + this.config.MARGIN_TICK + 5,
+      ]);
+    }
 
     this.x = this.xScale;
     this.y = this.yScale;
@@ -215,14 +227,15 @@ export class LineChart {
         `translate(${this.layout.pad.left},${this.layout.innerHeight + this.layout.pad.top})`,
       );
 
-    // TODO Config option for additional tick padding
+    let yTransform = `translate(${this.layout.pad.left - this.config.MARGIN_TICK},${this.layout.pad.top})`;
+    if (this.config.Y_AXIS_RIGHT) {
+      yTransform = `translate(${this.layout.pad.left + this.layout.innerWidth + this.config.MARGIN_TICK},${this.layout.pad.top})`;
+    }
+
     this.gy = this.svg
       .append("g")
       .attr("class", "y axis")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left - this.config.MARGIN_TICK},${this.layout.pad.top})`,
-      );
+      .attr("transform", yTransform);
 
     this.gGrid = this.svg
       .append("g")
