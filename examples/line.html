@@ -12,10 +12,10 @@ body {
 h1 {
   font-weight: normal;
 }
-.y.axis line {
+.grid line {
   stroke: #444;
 }
-.axis .domain {
+.domain {
   display: none;
 }
     </style>
@@ -23,7 +23,6 @@ h1 {
   <body>
     <div class="title">
       <h1>Line Chart Example</h1>
-      <button id="reset">Reset</button>
     </div>
     <div id="chart"></div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
@@ -49,7 +48,6 @@ const data = [
 ];
 const line = new charts.Line(data, charts.parse3dArray)
   .screenHeightPercent(0.8)
-  .zoomExtent(1, 16)
   .useDiscreteScheme(d3.schemeTableau10);
 
 line.yFormat = d3.format(".2f");
@@ -60,8 +58,6 @@ line.onEvent(
   (data) => line.highlight(data.z),
   () => line.noHighlight(),
 );
-
-document.getElementById("reset").addEventListener("click", () => line.reset());
     </script>
   </body>
 </html>

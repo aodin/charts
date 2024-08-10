@@ -122,17 +122,25 @@ export class LineChartWithZoom {
     return d3.filter(this.data, (d) => !this.hidden.has(d.z));
   }
 
+  get xDomain() {
+    return d3.extent(d3.map(this.visibleData, (d) => d.x));
+  }
+
+  get yDomain() {
+    return d3.extent(d3.map(this.visibleData, (d) => d.y));
+  }
+
   get xScale() {
     return d3
       .scaleLinear()
-      .domain(d3.extent(d3.map(this.visibleData, (d) => d.x)))
+      .domain(this.xDomain)
       .range([0, this.layout.innerWidth]);
   }
 
   get yScale() {
     return d3
       .scaleLinear()
-      .domain(d3.extent(d3.map(this.visibleData, (d) => d.y)))
+      .domain(this.yDomain)
       .range([this.layout.innerHeight, 0]);
   }
 
@@ -140,14 +148,22 @@ export class LineChartWithZoom {
     return this.config.ZOOM_EXTENT[0] === 1 && this.config.ZOOM_EXTENT[1] === 1;
   }
 
+  defined(d, i) {
+    // By default, all points are considered to be defined
+    return true;
+  }
+
   xAxis(g, x) {
     g.call(d3.axisBottom(x).tickSize(3).tickFormat(this.xFormat));
   }
 
   yAxis(g, y) {
-    g.call(
-      d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(this.yFormat),
-    );
+    g.call(d3.axisLeft(y).tickSize(0).tickFormat(this.yFormat));
+  }
+
+  grid(g, x, y) {
+    // Separating the grid from the axes allows more control of its positioning
+    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
   }
 
   updateLayout() {
@@ -216,6 +232,14 @@ export class LineChartWithZoom {
         `translate(${this.layout.pad.left},${this.layout.pad.top})`,
       );
 
+    this.gGrid = this.svg
+      .append("g")
+      .attr("class", "grid")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
+      );
+
     const gInner = this.svg
       .append("g")
       .attr("class", "inner")
@@ -264,14 +288,15 @@ export class LineChartWithZoom {
 
     // Re-draw the chart with the new x and y scales
     this.hideDot();
-    this.gx.attr("opacity", 1.0).call(this.xAxis.bind(this), x);
-    this.gy.attr("opacity", 1.0).call(this.yAxis.bind(this), y);
+    this.gx.call(this.xAxis.bind(this), x).attr("opacity", 1.0);
+    this.gy.call(this.yAxis.bind(this), y).attr("opacity", 1.0);
+    this.gGrid.call(this.grid.bind(this), x, y);
 
     // Plot the line
     const line = d3
       .line()
       .digits(2)
-      // .defined((d) => ) // TODO defined function
+      .defined(this.defined)
       .x((d) => x(d.x))
       .y((d) => y(d.y));
 
@@ -286,6 +311,7 @@ export class LineChartWithZoom {
     const z = this.svg
       .call(this.zoom)
       .call(this.zoom.transform, d3.zoomIdentity);
+
     if (this.zoomIsDisabled) {
       // Disable zoom completely if requested
       z.on("mousedown.zoom", null)
@@ -423,7 +449,7 @@ export class TimeSeriesChartWithZoom extends LineChartWithZoom {
   get xScale() {
     return d3
       .scaleUtc()
-      .domain(d3.extent(d3.map(this.visibleData, (d) => d.x)))
+      .domain(this.xDomain)
       .range([0, this.layout.innerWidth]);
   }
 }

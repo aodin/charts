@@ -130,18 +130,26 @@ export class LineChart {
     return d3.filter(this.data, (d) => !this.hidden.has(d.z));
   }
 
+  get xDomain() {
+    // By default, don't re-calculate the x-axis
+    return d3.extent(d3.map(this.data, (d) => d.x));
+  }
+
+  get yDomain() {
+    return d3.extent(d3.map(this.visibleData, (d) => d.y));
+  }
+
   get xScale() {
-    // Never re-calculate the x-axis
     return d3
       .scaleLinear()
-      .domain(d3.extent(d3.map(this.data, (d) => d.x)))
+      .domain(this.xDomain)
       .range([0, this.layout.innerWidth]);
   }
 
   get yScale() {
     return d3
       .scaleLinear()
-      .domain(d3.extent(d3.map(this.visibleData, (d) => d.y)))
+      .domain(this.yDomain)
       .range([this.layout.innerHeight, 0]);
   }
 
@@ -504,7 +512,7 @@ export class TimeSeriesChart extends LineChart {
   get xScale() {
     return d3
       .scaleUtc()
-      .domain(d3.extent(d3.map(this.data, (d) => d.x)))
+      .domain(this.xDomain)
       .range([0, this.layout.innerWidth]);
   }
 }

@@ -12,8 +12,8 @@ body {
 h1 {
   font-weight: normal;
 }
-.y.axis line {
-  stroke: #444;
+#chart text {
+  font-size: 13px;
 }
 .domain {
   display: none;
@@ -148,9 +148,7 @@ line.onEvent(
 );
 
 document.getElementById("reset").addEventListener("click", () => {
-  line.reset();
   line.showAll();
-
   legend.querySelectorAll("div").forEach((elem) => {
     elem.dataset.hidden = "";
   })
