@@ -3,7 +3,9 @@ Line chart
 */
 import * as d3 from "d3";
 
+import { quantizeScheme } from "./colors";
 import { layoutSVG } from "./layout";
+import { className } from "./text";
 import { maxLabelSize } from "./ticks";
 import { throttle } from "./throttle";
 
@@ -110,11 +112,9 @@ export class LineChart {
   }
 
   useContinuousScheme(scheme, min = 0.0, max = 1.0) {
-    const colors = d3.quantize(
-      (t) => scheme(t * (max - min) + min),
-      this.Z.length,
+    return this.useDiscreteScheme(
+      quantizeScheme(this.Z.length, scheme, min, max),
     );
-    return this.useDiscreteScheme(colors);
   }
   /* End config chained methods */
 
@@ -308,7 +308,7 @@ export class LineChart {
     this.paths
       .attr("d", ([, I]) => line(I))
       .attr("stroke", ([z]) => this.colors(z))
-      .attr("class", ([z]) => z)
+      .attr("class", ([z]) => className(z))
       .attr("opacity", 1);
 
     const lengths = d3.map(this.paths, (elem) => getLength(elem));
@@ -363,7 +363,6 @@ export class LineChart {
       .transition()
       .duration(this.config.DURATION_MS)
       .attr("d", ([, I]) => line(I))
-      // .attr("stroke-dasharray", (d, i) => `${lengths[i]} ${lengths[i]}`)
       .attr("stroke-dashoffset", 0)
       .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
 
@@ -508,12 +507,22 @@ export function Line(data, parser) {
 }
 
 export class TimeSeriesChart extends LineChart {
-  // Never re-calculate the x-axis
   get xScale() {
+    // Never re-calculate the x-axis
     return d3
       .scaleUtc()
       .domain(this.xDomain)
       .range([0, this.layout.innerWidth]);
+  }
+
+  sortData(data) {
+    data.sort((a, b) => a.x - b.x);
+    return data;
+  }
+
+  parseData(data, parser) {
+    // Sort timeseries data in ascending order
+    return this.sortData(super.parseData(data, parser));
   }
 }
 

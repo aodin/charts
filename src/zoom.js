@@ -3,7 +3,9 @@ Line chart
 */
 import * as d3 from "d3";
 
+import { quantizeScheme } from "./colors";
 import { layoutSVG } from "./layout";
+import { className } from "./text";
 import { maxLabelSize } from "./ticks";
 import { throttle } from "./throttle";
 
@@ -93,11 +95,9 @@ export class LineChartWithZoom {
   }
 
   useContinuousScheme(scheme, min = 0.0, max = 1.0) {
-    const colors = d3.quantize(
-      (t) => scheme(t * (max - min) + min),
-      this.Z.length,
+    return this.useDiscreteScheme(
+      quantizeScheme(this.Z.length, scheme, min, max),
     );
-    return this.useDiscreteScheme(colors);
   }
 
   zoomExtent(min, max) {
@@ -303,7 +303,7 @@ export class LineChartWithZoom {
     this.paths
       .attr("d", ([, I]) => line(I))
       .attr("stroke", ([z]) => this.colors(z))
-      .attr("class", ([z]) => z)
+      .attr("class", ([z]) => className(z))
       .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
   }
 

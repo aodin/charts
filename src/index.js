@@ -10,6 +10,7 @@ export * from "./line";
 export * from "./magnitude";
 export * from "./options";
 export * from "./pie";
+export * from "./text";
 export * from "./throttle";
 export * from "./ticks";
 export * from "./timeseries";
