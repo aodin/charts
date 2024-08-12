@@ -37,3 +37,26 @@ export function quarter(d) {
 }
 
 export const year = (d) => d.getUTCFullYear();
+
+export function quarterToIso(value) {
+  // Convert a quarter in the format (q)Q(yyyy) - e.g. 1Q2024 - to an ISO date
+  value = String(value).replace(" ", "");
+  let year = "";
+  if (value.length === 4) {
+    year = `20${value.substring(2)}`;
+  } else if (value.length === 6) {
+    year = value.substring(2);
+  }
+  if (!year) return null;
+  let q = parseInt(value.substring(0, 1));
+  let month = `${q * 3}`.padStart(2, "0");
+  let day = ["", "31", "30", "30", "31"][q];
+  return d3.isoParse(`${year}-${month}-${day}`);
+}
+
+export function yearToIso(value) {
+  // Convert a year to an ISO date
+  if (value.length !== 4) return null;
+  const year = parseInt(value);
+  return d3.isoParse(`${year}-01-01`);
+}

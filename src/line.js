@@ -309,17 +309,29 @@ export class LineChart {
       .attr("d", ([, I]) => line(I))
       .attr("stroke", ([z]) => this.colors(z))
       .attr("class", ([z]) => className(z))
-      .attr("opacity", 1);
+      .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
 
     const lengths = d3.map(this.paths, (elem) => getLength(elem));
 
     this.paths
-      .attr("stroke-dasharray", (d, i) => {
-        return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
-      })
-      .attr("stroke-dashoffset", (d, i) => lengths[i]);
+      .attr("stroke-dasharray", (d, i) =>
+        this.getStrokeDasharray(d, i, lengths),
+      )
+      .attr("stroke-dashoffset", (d, i) =>
+        this.getStrokeDashOffset(d, i, lengths),
+      );
 
     this.update(this.x, this.y);
+  }
+
+  getStrokeDasharray(d, i, lengths, previousUpdate) {
+    // By default, the dasharray performs an opening animation
+    if (previousUpdate) return "1 0";
+    return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
+  }
+
+  getStrokeDashOffset(d, i, lengths) {
+    return lengths[i] || 0;
   }
 
   update(x, y) {
@@ -367,7 +379,10 @@ export class LineChart {
       .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
 
     if (this.previousUpdate) {
-      this.paths.attr("stroke-dasharray", "1 0");
+      // TODO How to support both an animation and custom styles needs more thought
+      this.paths.attr("stroke-dasharray", (d, i) =>
+        this.getStrokeDasharray(d, i, [], this.previousUpdate),
+      );
     }
     this.previousUpdate = true;
   }
