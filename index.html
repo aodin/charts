@@ -186,13 +186,14 @@ chart.legend.forEach((item) => {
   legend.appendChild(clone);
 
   // Create hover events that highlight chart on legend hover, but only if it's active
-  div.addEventListener("mouseover", (elem) => {
-    if (div.dataset.hidden === "") {
-      chart.highlight(item.abbrev);
-    } else {
-      chart.noHighlight();
-    }
-  });
+  // NOTE This creates strange effects on mobile
+  // div.addEventListener("mouseover", (elem) => {
+  //   if (div.dataset.hidden === "") {
+  //     chart.highlight(item.abbrev);
+  //   } else {
+  //     chart.noHighlight();
+  //   }
+  // });
 
   // Show only that item when double click
   div.addEventListener("dblclick", (evt) => {
