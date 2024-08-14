@@ -54,7 +54,7 @@ export class LineChart {
     };
 
     // Items can be dynamically hidden from the chart
-    this.hidden = new Set();
+    this.hidden = new d3.InternSet();
 
     this.data = this.parseData(data, parser);
     this.items = this.parseItems(data);
@@ -69,7 +69,7 @@ export class LineChart {
   parseItems(data) {
     // By default, items will be built from unique z values. To specify the items
     // instead (and optionally provide a color) override this method
-    return Array.from(new Set(d3.map(this.data, (d) => d.z)));
+    return Array.from(new d3.InternSet(d3.map(this.data, (d) => d.z)));
   }
 
   parseZ(data) {
@@ -116,6 +116,12 @@ export class LineChart {
       quantizeScheme(this.Z.length, scheme, min, max),
     );
   }
+
+  invertScheme() {
+    this.colors = this.colors.range(this.colors.range().reverse());
+    return this;
+  }
+
   /* End config chained methods */
 
   get legend() {
@@ -125,8 +131,10 @@ export class LineChart {
     });
   }
 
-  get visibleZ() {
-    return Array.from(new Set(this.Z).difference(this.hidden));
+  get zVisible() {
+    const visible = new d3.InternSet(this.Z);
+    this.hidden.forEach((z) => visible.delete(z));
+    return Array.from(visible);
   }
 
   get visibleData() {
@@ -136,7 +144,7 @@ export class LineChart {
 
   get empty() {
     // Returns True if there are no visible items on the chart
-    return this.visibleZ.length === 0;
+    return this.zVisible.length === 0;
   }
 
   get xDomain() {
@@ -507,23 +515,27 @@ export class LineChart {
 
   hide(...z) {
     // Add the given z elements to the hidden set
-    this.hidden = this.hidden.union(new Set(z));
+    this.hidden = this.hidden.union(new d3.InternSet(z));
     this.toggle();
   }
 
   show(...z) {
     // Remove the given z elements from the hidden set
-    this.hidden = this.hidden.difference(new Set(z));
+    this.hidden = this.hidden.difference(new d3.InternSet(z));
     this.toggle();
   }
 
+  setHidden(...z) {
+    this.hidden = new d3.InternSet(z);
+  }
+
   hideAll() {
-    this.hidden = new Set(this.Z);
+    this.hidden = new d3.InternSet(this.Z);
     this.toggle();
   }
 
   showAll() {
-    this.hidden = new Set();
+    this.hidden.clear();
     this.toggle();
   }
 
