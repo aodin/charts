@@ -81,7 +81,6 @@ h1 {
     </div>
     <div id="legend"></div>
     <div id="chart"></div>
-    <p>Footer</p>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script src="../dist/line.min.js"></script>
     <template id="legendTemplate">
@@ -91,25 +90,33 @@ h1 {
       </div>
     </template>
     <script type="text/javascript">
-const data = [
-  ["2020-01-01", 100, "A"],
-  ["2020-02-01", 110, "A"],
-  ["2020-03-01", 120, "A"],
-  ["2020-04-01", 125, "A"],
-  ["2020-05-01", 115, "A"],
-  ["2020-06-01", 110, "A"],
-  ["2020-01-01", 20, "B"],
-  ["2020-02-01", 50, "B"],
-  ["2020-03-01", 100, "B"],
-  ["2020-04-01", 140, "B"],
-  ["2020-05-01", 120, "B"],
-  ["2020-06-01", 50, "B"],
-  ["2020-01-01", 0, "C"],
-  ["2020-04-01", 10, "C"],
-  ["2020-05-01", 10, "C"],
-  ["2020-06-01", 12, "C"],
-];
-const line = new charts.TimeSeries(data, charts.parseTimeSeries3dArray)
+const dates = d3.map([
+  "2020-01-01",
+  "2020-02-01",
+  "2020-03-01",
+  "2020-04-01",
+  "2020-05-01",
+  "2020-06-01",
+], d3.isoParse);
+
+const zs = [
+  "A", "B", "C", "D", "E", "F", "G",
+]
+
+// Create random data
+const data = []
+zs.forEach((z, i) => {
+  const r = d3.randomInt(0, (i + 1) * 25);
+  dates.forEach((x) => {
+    data.push({
+      x: x,
+      y: r(),
+      z: z,
+    });
+  });
+});
+
+const line = new charts.TimeSeries(data)
   .screenHeightPercent(0.7)
   .hideIfEmpty()
   .useContinuousScheme(d3.interpolatePlasma, 0.4, 0.95);

@@ -3,32 +3,148 @@
   <head>
     <title>@aodin/charts: Area</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+body {
+  font-family: sans-serif;
+}
+h1 {
+  font-weight: normal;
+}
+#chart text {
+  font-size: 13px;
+}
+.domain {
+  display: none;
+}
+.grid {
+  opacity: 0.2;
+}
+
+/* Legend */
+#legend {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.legendItem {
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+  padding-right: 1rem !important;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.legendItem[data-hidden="true"] {
+  opacity: 0.4;
+}
+.legendItem > svg {
+  padding-right: 0.4rem !important;
+  height: 12px;
+  width: 12px;
+}
+.legendItem > svg > rect {
+  height: 12px;
+  width: 12px;
+}
+.legendItem > span {
+  user-select: none;
+}
+#chart-tooltip {
+  line-height: 1.4;
+  text-shadow: -1px -1px 1px black,1px -1px 1px black,-1px 1px 1px black,1px 1px 1px black;
+}
+@media (max-width: 600px) {
+  #title h1 {
+    font-size: 24px;
+  }
+  .legendItem {
+    font-size: 0.75rem;
+  }
+  .legendItem > svg {
+    padding-right: 0.3rem !important;
+    height: 10px;
+    width: 10px;
+  }
+  .legendItem > svg > rect {
+    height: 10px;
+    width: 10px;
+  }
+}
+    </style>
   </head>
   <body>
-    <h1>Area Chart Example</h1>
+    <div class="title">
+      <h1>Area Chart Example</h1>
+      <button id="reset">Reset</button>
+    </div>
+    <div id="legend"></div>
     <div id="chart"></div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script src="../dist/area.min.js"></script>
+    <template id="legendTemplate">
+      <div class="legendItem">
+        <svg><rect /></svg>
+        <span></span>
+      </div>
+    </template>
     <script type="text/javascript">
-const data = [
-  ["2020-01-01", 100, "A"],
-  ["2020-02-01", 110, "A"],
-  ["2020-03-01", 120, "A"],
-  ["2020-04-01", 125, "A"],
-  ["2020-05-01", 115, "A"],
-  ["2020-06-01", 110, "A"],
-  ["2020-01-01", 20, "B"],
-  ["2020-02-01", 50, "B"],
-  ["2020-03-01", 100, "B"],
-  ["2020-04-01", 140, "B"],
-  ["2020-05-01", 120, "B"],
-  ["2020-06-01", 50, "B"],
-  ["2020-01-01", 0, "C"],
-  ["2020-04-01", 10, "C"],
-  ["2020-05-01", 10, "C"],
-  ["2020-06-01", 12, "C"],
-];
-const area = charts.Area(data).yTickLimit(6);
+const dates = d3.map([
+  "2020-01-01",
+  "2020-02-01",
+  "2020-03-01",
+  "2020-04-01",
+  "2020-05-01",
+  "2020-06-01",
+], d3.isoParse);
+
+const zs = [
+  "A", "B", "C", "D", "E", "F", "G",
+]
+
+// Create random data
+const data = []
+zs.forEach((z, i) => {
+  const r = d3.randomInt(0, i * 50);
+  dates.forEach((x) => {
+    data.push({
+      x: x,
+      y: r(),
+      z: z,
+    });
+  });
+});
+
+const area = charts.TimeSeriesArea(data)
+  .screenHeightPercent(0.7)
+  .useContinuousScheme(d3.interpolatePlasma);
+
+const legend = document.querySelector("#legend");
+const template = document.querySelector("#legendTemplate");
+
+area.legend.forEach((item) => {
+  const clone = template.content.cloneNode(true);
+  const div = clone.querySelector("div");
+  div.dataset.key = item.key;
+  div.dataset.hidden = ""; // Initial show/hide state can be set here
+
+  clone
+    .querySelector("rect")
+    .setAttribute("fill", item.color);
+  clone.querySelector("span").textContent = `${item.key}`;
+  legend.appendChild(clone);
+
+  // Hide the item on single click, unless it is already hidden, then show
+  div.addEventListener("click", (evt) => {
+    if (div.dataset.hidden === "") {
+      area.hide(item.key);
+      div.dataset.hidden = "true";
+    } else {
+      area.show(item.key);
+      div.dataset.hidden = "";
+    }
+  });
+});
+
 area.render("#chart");
     </script>
   </body>

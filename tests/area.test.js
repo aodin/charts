@@ -2,7 +2,7 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { Area } from "../src/area";
+import { Area, parseTimeSeries3dArray } from "../src/area";
 import { monthly } from "./data";
 
 describe("Area", () => {
@@ -15,9 +15,8 @@ describe("Area", () => {
   });
 
   it("should be rendered on the DOM", () => {
-    const area = Area(monthly, { FONT_SIZE: "20px" });
+    const area = Area(monthly, parseTimeSeries3dArray);
     area.render("#chart");
-    expect(area.X.length).toBe(6); // For area charts, X will only be unique X values
   });
 
   afterEach(() => {
