@@ -125,9 +125,18 @@ export class LineChart {
     });
   }
 
+  get visibleZ() {
+    return Array.from(new Set(this.Z).difference(this.hidden));
+  }
+
   get visibleData() {
     // TODO memoization
     return d3.filter(this.data, (d) => !this.hidden.has(d.z));
+  }
+
+  get empty() {
+    // Returns True if there are no visible items on the chart
+    return this.visibleZ.length === 0;
   }
 
   get xDomain() {
@@ -136,7 +145,12 @@ export class LineChart {
   }
 
   get yDomain() {
-    return d3.extent(d3.map(this.visibleData, (d) => d.y));
+    // TODO memoization
+    if (this.visibleData.length) {
+      return d3.extent(d3.map(this.visibleData, (d) => d.y));
+    } else {
+      return d3.extent(d3.map(this.data, (d) => d.y));
+    }
   }
 
   get xScale() {
@@ -172,6 +186,8 @@ export class LineChart {
 
   grid(g, x, y) {
     // Separating the grid from the axes allows more control of its positioning
+    // Another option for "zero state" is to set the tick size to zero
+    // const tickSize = this.empty ? 0 : -this.layout.innerWidth;
     g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
   }
 
@@ -293,9 +309,16 @@ export class LineChart {
     // once and all subsequent updates will just use a solid stroke
     this.previousUpdate = false;
 
+    // Visibility and opacity will be changed when the chart is in a "zero state"
+    const isEmpty = this.empty;
+
     // Set initial state
     this.gx.call(this.xAxis.bind(this), this.x).attr("opacity", 1.0);
-    this.gy.call(this.yAxis.bind(this), this.y).attr("opacity", 1.0);
+
+    this.gy
+      .call(this.yAxis.bind(this), this.y)
+      .attr("opacity", isEmpty ? 0.0 : 1.0);
+
     this.gGrid.call(this.grid.bind(this), this.x, this.y);
 
     const line = d3
@@ -337,12 +360,14 @@ export class LineChart {
   update(x, y) {
     this.hideDot();
 
+    const isEmpty = this.empty;
+
     // Option to hide the chart if there's no visible data
     if (this.config.HIDE_EMPTY_CHART) {
       this.svg
         .transition()
         .duration(this.config.DURATION_MS)
-        .attr("opacity", this.visibleData.length ? 1.0 : 0.0);
+        .attr("opacity", isEmpty ? 0.0 : 1.0);
     }
 
     // Re-draw the chart with the new x and y scales
@@ -356,11 +381,13 @@ export class LineChart {
       .transition()
       .duration(this.config.DURATION_MS)
       .call(this.yAxis.bind(this), y)
-      .attr("opacity", this.visibleData.length ? 1.0 : 0.0);
+      .attr("opacity", isEmpty ? 0.0 : 1.0);
 
+    // Grid lines have a hardcoded opacity 1, so we need to use visibility to hide them
     this.gGrid
       .transition()
       .duration(this.config.DURATION_MS)
+      .attr("visibility", isEmpty ? "hidden" : "visible")
       .call(this.grid.bind(this), x, y);
 
     // Plot the line
