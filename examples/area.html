@@ -33,6 +33,8 @@ h1 {
   display: flex;
   align-items: center;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .legendItem[data-hidden="true"] {
   opacity: 0.4;
@@ -70,12 +72,17 @@ h1 {
     width: 10px;
   }
 }
+#chart svg {
+  /* crispEdges, geometricPrecision */
+  shape-rendering: geometricPrecision;
+}
     </style>
   </head>
   <body>
     <div class="title">
       <h1>Area Chart Example</h1>
-      <button id="reset">Reset</button>
+      <button id="reset">Show all</button>
+      <button id="hide">Hide all</button>
     </div>
     <div id="legend"></div>
     <div id="chart"></div>
@@ -104,7 +111,7 @@ const zs = [
 // Create random data
 const data = []
 zs.forEach((z, i) => {
-  const r = d3.randomInt(0, i * 50);
+  const r = d3.randomInt(0, (i + 1) * 50);
   dates.forEach((x) => {
     data.push({
       x: x,
@@ -116,6 +123,7 @@ zs.forEach((z, i) => {
 
 const area = charts.TimeSeriesArea(data)
   .screenHeightPercent(0.7)
+  .yAxisRight()
   .useContinuousScheme(d3.interpolatePlasma);
 
 const legend = document.querySelector("#legend");
@@ -145,7 +153,38 @@ area.legend.forEach((item) => {
   });
 });
 
+// Start with everything hidden
+area.startHidden();
+
+document.querySelectorAll("#legend > div").forEach((div) => {
+  div.dataset.hidden = "true";
+});
+
 area.render("#chart");
+
+function onEnter(d) {
+  area.highlight(d.key);
+}
+
+function onLeave(d) {
+  area.noHighlight()
+}
+
+area.onEvent(onEnter, onLeave)
+
+document.getElementById("reset").addEventListener("click", () => {
+  document.querySelectorAll("#legend > div").forEach((div) => {
+    div.dataset.hidden = "";
+  });
+  area.showAll();
+});
+
+document.getElementById("hide").addEventListener("click", () => {
+  document.querySelectorAll("#legend > div").forEach((div) => {
+    div.dataset.hidden = "true";
+  });
+  area.hideAll();
+});
     </script>
   </body>
 </html>

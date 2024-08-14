@@ -36,8 +36,8 @@ export class AreaChart {
     this.config = {
       SCREEN_HEIGHT_PERCENT: 0.5,
       DURATION_MS: 500,
+      BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       Y_AXIS_RIGHT: false,
-      HIDE_EMPTY_CHART: false,
       COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
 
       // Additional margins
@@ -51,22 +51,37 @@ export class AreaChart {
     this.items = this.parseItems(data);
     this.Z = this.parseZ(data);
     this.colors = this.setColors(data);
+  }
+
+  getStack(data) {
     // Index the data by x, then by z for each x
-    this.indexed = d3.index(
-      this.data,
+    const indexed = d3.index(
+      data,
       (d) => d.x,
       (d) => d.z,
     );
 
     // Build the stack, one array per item, with an elem for each quarter
-    // TODO What is we hide items?
-    this.stack = d3
+    const stack = d3
       .stack()
       .keys(this.Z)
       .value(([, group], key) => {
         const item = group.get(key);
         return item && item.y ? item.y : 0;
-      })(this.indexed);
+      })(indexed);
+
+    // Largest items are returned first, since the stack areas are all drawn from zero
+    return stack.reverse();
+  }
+
+  get stack() {
+    // Only visible data - hidden items are all zero
+    return this.getStack(this.visibleData);
+  }
+
+  get fullStack() {
+    // All data
+    return this.getStack(this.data);
   }
 
   parseData(data, parser) {
@@ -102,14 +117,14 @@ export class AreaChart {
     return this.animationDuration(0);
   }
 
-  yAxisRight() {
-    // The y axis ticks and labels will be shown on the right of the chart
-    this.config.Y_AXIS_RIGHT = true;
+  backgroundOpacity(value) {
+    this.config.BACKGROUND_OPACITY = value;
     return this;
   }
 
-  hideIfEmpty() {
-    this.config.HIDE_EMPTY_CHART = true;
+  yAxisRight() {
+    // The y axis ticks and labels will be shown on the right of the chart
+    this.config.Y_AXIS_RIGHT = true;
     return this;
   }
 
@@ -129,6 +144,11 @@ export class AreaChart {
     return this;
   }
 
+  startHidden() {
+    // The first render will have all items hidden
+    this.hidden = new d3.InternSet(this.Z);
+    return this;
+  }
   /* End config chained methods */
 
   get legend() {
@@ -138,29 +158,21 @@ export class AreaChart {
     });
   }
 
-  get zVisible() {
-    const visible = new d3.InternSet(this.Z);
-    this.hidden.forEach((z) => visible.delete(z));
-    return Array.from(visible);
-  }
-
   get visibleData() {
     // TODO memoization
-    return d3.filter(this.data, (d) => !this.hidden.has(d.z));
-  }
-
-  get empty() {
-    // Returns True if there are no visible items on the chart
-    return this.zVisible.length === 0;
+    // return d3.filter(this.data, (d) => !this.hidden.has(d.z));
+    // Set hidden values to zero
+    return d3.map(this.data, (d) => this.hidden.has(d.z) ? {x: d.x, y: 0, z: d.z} : d);
   }
 
   get xDomain() {
     // By default, don't re-calculate the x-axis
     return d3.extent(d3.map(this.data, (d) => d.x));
   }
-
+  
   get yDomain() {
-    return [0, d3.max(this.stack[this.stack.length - 1], (d) => d[1])];
+    // Always show the full y Axis
+    return [0, d3.max(this.fullStack[0], (d) => d[1])];
   }
 
   get xScale() {
@@ -174,7 +186,7 @@ export class AreaChart {
     return d3
       .scaleLinear()
       .domain(this.yDomain)
-      .range([this.layout.innerHeight, 0]);
+      .range([this.layout.innerHeight, 0]).nice();
   }
 
   defined(d, i) {
@@ -196,8 +208,6 @@ export class AreaChart {
 
   grid(g, x, y) {
     // Separating the grid from the axes allows more control of its positioning
-    // Another option for "zero state" is to set the tick size to zero
-    // const tickSize = this.empty ? 0 : -this.layout.innerWidth;
     g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
   }
 
@@ -227,8 +237,8 @@ export class AreaChart {
         yLabelWidth + this.config.MARGIN_TICK + 5,
       ]);
       // The default axes has a pretty large left pad - if using a right axes this
-      // left pad can be reduced
-      this.layout.pad.left = 5;
+      // left pad can be reduced, but we still need room for the x-scale tick labels
+      this.layout.pad.left = 15;
     } else {
       this.layout.pad.left = d3.max([
         this.layout.pad.left,
@@ -305,12 +315,12 @@ export class AreaChart {
     this.gy.call(this.yAxis.bind(this), this.y);
     this.gGrid.call(this.grid.bind(this), this.x, this.y);
 
-    // Construct an area
+    // Draw the zero state areas
     const area = d3
       .area()
-      .x((d) => this.xScale(d.data[0]))
-      .y0((d) => this.yScale(0))
-      .y1((d) => this.yScale(0));
+      .x((d) => this.x(d.data[0]))
+      .y0((d) => this.y(0))
+      .y1((d) => this.y(0));
 
     this.areas = gInner
       .append("g")
@@ -318,73 +328,43 @@ export class AreaChart {
       .data(this.stack)
       .join("path")
       .attr("fill", (d) => this.colors(d.key))
+      .attr("class",(d) => className(d.key))
       .attr("d", area);
 
     this.update(this.x, this.y);
   }
 
   update(x, y) {
-    // Option to hide the chart if there's no visible data
-    if (this.config.HIDE_EMPTY_CHART) {
-      this.svg.transition().duration(this.config.DURATION_MS);
-    }
-
-    // Re-draw the chart with the new x and y scales
-    // NOTE: with current setup, x-axis doesn't need to be updated
-    this.gx
-      .transition()
-      .duration(this.config.DURATION_MS)
-      .call(this.xAxis.bind(this), x);
-
-    this.gy
-      .transition()
-      .duration(this.config.DURATION_MS)
-      .call(this.yAxis.bind(this), y);
-
-    // Grid lines have a hardcoded opacity 1, so we need to use visibility to hide them
-    this.gGrid
-      .transition()
-      .duration(this.config.DURATION_MS)
-      .call(this.grid.bind(this), x, y);
-
-    // Construct an area
+    // Draw visible areas - always from 0
     const area = d3
       .area()
-      .x((d) => this.xScale(d.data[0]))
-      .y0((d) => this.yScale(d[0]))
-      // .y0((d) => this.yScale(0))
-      .y1((d) => this.yScale(d[1]));
+      .x((d) => x(d.data[0]))
+      .y0((d) => y(0))
+      .y1((d) => y(d[1]));
 
-    this.areas.transition().duration(this.config.DURATION_MS).attr("d", area);
+    this.areas
+      .data(this.stack)
+      .transition()
+      .duration(this.config.DURATION_MS)
+      .attr("d", area);
   }
 
   noHighlight() {
     // Reset all areas to default
+    // this.areas.attr("fill", (d) => this.colors(d.key));
+    this.areas.attr("opacity", 1.0);
   }
-
+  
   highlight(z) {
     // Make the given z more prominent
+    // this.areas.attr("fill", (d) => d.key === z ? this.colors(d.key) : "#ddd");
+    this.areas.attr("opacity", (d) => d.key === z ? 1.0 : this.config.BACKGROUND_OPACITY);
   }
 
-  onEvent(move, leave) {
-    // Determine the closest point to the cursor
-    const pointermove = (evt) => {
-      let [xm, ym] = d3.pointer(evt);
-      // X and y scales use the inner element, which is padded
-      xm -= this.layout.pad.left;
-      ym -= this.layout.pad.top;
-
-      // Data the will provided to the callback
-      const data = {
-        x: d.x,
-        y: d.y,
-        z: d.z,
-        dx: this.x(d.x) + this.layout.pad.left,
-        dy: this.y(d.y) + this.layout.pad.top,
-      };
-
-      if (move) {
-        move.call(this, data);
+  onEvent(enter, leave) {
+    const pointerenter = (evt, d) => {
+      if (enter) {
+        enter.call(this, d, evt);
       }
     };
 
@@ -394,13 +374,9 @@ export class AreaChart {
       }
     };
 
-    this.svg
-      .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
+    this.areas
+      .on("pointerenter", pointerenter)
       .on("pointerleave", pointerleave)
-      .on("touchstart", (evt) => {
-        pointermove(evt);
-        evt.preventDefault();
-      });
   }
 
   hide(...z) {
@@ -430,18 +406,6 @@ export class AreaChart {
   }
 
   toggle() {
-    if (this.visibleData.length) {
-      // Recalculate the y-scale based on the non-hidden items
-      this.y = this.yScale;
-    } else {
-      // Set y-axis to zero
-      // We would need the last y-axis domain in order to prevent tick labels
-      // from changing during this transition
-      this.y = d3
-        .scaleLinear()
-        .domain(this.y.domain())
-        .range([this.layout.innerHeight, this.layout.innerHeight]);
-    }
     this.update(this.x, this.y);
   }
 }

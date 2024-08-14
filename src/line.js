@@ -95,6 +95,11 @@ export class LineChart {
     return this.animationDuration(0);
   }
 
+  backgroundOpacity(value) {
+    this.config.BACKGROUND_OPACITY = value;
+    return this;
+  }
+
   yAxisRight() {
     // The y axis ticks and labels will be shown on the right of the chart
     this.config.Y_AXIS_RIGHT = true;
@@ -493,14 +498,14 @@ export class LineChart {
       };
 
       if (move) {
-        move.call(this, data);
+        move.call(this, data, evt);
       }
     };
 
     const pointerleave = (evt) => {
       this.hideDot();
       if (leave) {
-        leave.call(this);
+        leave.call(this, evt);
       }
     };
 
