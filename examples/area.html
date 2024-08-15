@@ -53,7 +53,7 @@ h1 {
 }
 #chart-tooltip {
   line-height: 1.4;
-  text-shadow: -1px -1px 1px black,1px -1px 1px black,-1px 1px 1px black,1px 1px 1px black;
+  text-shadow: -1px -1px 0px white,1px -1px 0px white,-1px 1px 0px white,1px 1px 1px white;
 }
 @media (max-width: 600px) {
   #title h1 {
@@ -102,11 +102,15 @@ const dates = d3.map([
   "2020-04-01",
   "2020-05-01",
   "2020-06-01",
+  "2020-07-01",
+  "2020-08-01",
+  "2020-09-01",
+  "2020-10-01",
+  "2020-11-01",
+  "2020-12-01",
 ], d3.isoParse);
 
-const zs = [
-  "A", "B", "C", "D", "E", "F", "G",
-]
+const zs = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
 // Create random data
 const data = []
@@ -129,7 +133,7 @@ const area = charts.TimeSeriesArea(data)
 const legend = document.querySelector("#legend");
 const template = document.querySelector("#legendTemplate");
 
-area.legend.forEach((item) => {
+area.legend.reverse().forEach((item) => {
   const clone = template.content.cloneNode(true);
   const div = clone.querySelector("div");
   div.dataset.key = item.key;
@@ -154,23 +158,58 @@ area.legend.forEach((item) => {
 });
 
 // Start with everything hidden
-area.startHidden();
-
-document.querySelectorAll("#legend > div").forEach((div) => {
-  div.dataset.hidden = "true";
-});
+// area.startHidden();
+// document.querySelectorAll("#legend > div").forEach((div) => {
+//   div.dataset.hidden = "true";
+// });
 
 area.render("#chart");
 
-function onEnter(d) {
-  area.highlight(d.key);
+const tooltip = d3
+  .select("body")
+  .append("div")
+  .attr("id", "chart-tooltip")
+  .style("pointer-events", "none")
+  .style("position", "absolute")
+  .style("opacity", 0)
+  .style("font-size", "13px");
+
+const bbox = document.getElementById("chart-tooltip");
+const rect = document.getElementById("chart");
+
+const monthYear = d3.utcFormat("%b %Y");
+
+function onMove(d) {
+  // area.highlight(d.key);
+  tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${d.y}`);
+
+  let offsetY = -bbox.offsetHeight - 5;
+  let offsetX = 0;
+  if (d.dx > (5 * rect.offsetWidth) / 6) {
+    // Right side of chart
+    offsetX = -bbox.offsetWidth - 10;
+    tooltip.style("text-align", "right");
+  } else {
+    // Left side of chart
+    tooltip.style("text-align", "left");
+  }
+
+  if (data.dy < (rect.offsetHeight / 4)) {
+    offsetY = 5;
+  }
+
+  tooltip
+    .style("opacity", 1)
+    .style("left", `${d.dx + rect.offsetLeft + offsetX}px`)
+    .style("top", `${d.dy + rect.offsetTop + offsetY}px`);
 }
 
 function onLeave(d) {
-  area.noHighlight()
+  // area.noHighlight()
+  tooltip.style("opacity", 0);
 }
 
-area.onEvent(onEnter, onLeave)
+area.onEvent(onMove, onLeave)
 
 document.getElementById("reset").addEventListener("click", () => {
   document.querySelectorAll("#legend > div").forEach((div) => {

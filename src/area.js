@@ -53,37 +53,6 @@ export class AreaChart {
     this.colors = this.setColors(data);
   }
 
-  getStack(data) {
-    // Index the data by x, then by z for each x
-    const indexed = d3.index(
-      data,
-      (d) => d.x,
-      (d) => d.z,
-    );
-
-    // Build the stack, one array per item, with an elem for each quarter
-    const stack = d3
-      .stack()
-      .keys(this.Z)
-      .value(([, group], key) => {
-        const item = group.get(key);
-        return item && item.y ? item.y : 0;
-      })(indexed);
-
-    // Largest items are returned first, since the stack areas are all drawn from zero
-    return stack.reverse();
-  }
-
-  get stack() {
-    // Only visible data - hidden items are all zero
-    return this.getStack(this.visibleData);
-  }
-
-  get fullStack() {
-    // All data
-    return this.getStack(this.data);
-  }
-
   parseData(data, parser) {
     return d3.map(data, parser);
   }
@@ -151,8 +120,40 @@ export class AreaChart {
   }
   /* End config chained methods */
 
+  getStack(data) {
+    // Index the data by x, then by z for each x
+    const indexed = d3.index(
+      data,
+      (d) => d.x,
+      (d) => d.z,
+    );
+
+    // Build the stack, one array per item, with an elem for each quarter
+    const stack = d3
+      .stack()
+      .keys(this.Z)
+      .value(([, group], key) => {
+        const item = group.get(key);
+        return item && item.y ? item.y : 0;
+      })(indexed);
+
+    // Largest items are returned first, since the stack areas are all drawn from zero
+    return stack.reverse();
+  }
+
+  get stack() {
+    // Only visible data - hidden items are all zero
+    return this.getStack(this.visibleData);
+  }
+
+  get fullStack() {
+    // All data
+    return this.getStack(this.data);
+  }
+
   get legend() {
     // Return the z items along with their colors
+    // TODO SHould legend order be reversed?
     return d3.map(this.Z, (d) => {
       return { key: d, color: this.colors(d) };
     });
@@ -162,14 +163,16 @@ export class AreaChart {
     // TODO memoization
     // return d3.filter(this.data, (d) => !this.hidden.has(d.z));
     // Set hidden values to zero
-    return d3.map(this.data, (d) => this.hidden.has(d.z) ? {x: d.x, y: 0, z: d.z} : d);
+    return d3.map(this.data, (d) =>
+      this.hidden.has(d.z) ? { x: d.x, y: 0, z: d.z } : d,
+    );
   }
 
   get xDomain() {
     // By default, don't re-calculate the x-axis
     return d3.extent(d3.map(this.data, (d) => d.x));
   }
-  
+
   get yDomain() {
     // Always show the full y Axis
     return [0, d3.max(this.fullStack[0], (d) => d[1])];
@@ -186,7 +189,8 @@ export class AreaChart {
     return d3
       .scaleLinear()
       .domain(this.yDomain)
-      .range([this.layout.innerHeight, 0]).nice();
+      .range([this.layout.innerHeight, 0])
+      .nice();
   }
 
   defined(d, i) {
@@ -328,7 +332,7 @@ export class AreaChart {
       .data(this.stack)
       .join("path")
       .attr("fill", (d) => this.colors(d.key))
-      .attr("class",(d) => className(d.key))
+      .attr("class", (d) => className(d.key))
       .attr("d", area);
 
     this.update(this.x, this.y);
@@ -352,31 +356,53 @@ export class AreaChart {
   noHighlight() {
     // Reset all areas to default
     // this.areas.attr("fill", (d) => this.colors(d.key));
-    this.areas.attr("opacity", 1.0);
-  }
-  
-  highlight(z) {
-    // Make the given z more prominent
-    // this.areas.attr("fill", (d) => d.key === z ? this.colors(d.key) : "#ddd");
-    this.areas.attr("opacity", (d) => d.key === z ? 1.0 : this.config.BACKGROUND_OPACITY);
+    // this.areas.attr("opacity", 1.0);
   }
 
-  onEvent(enter, leave) {
-    const pointerenter = (evt, d) => {
-      if (enter) {
-        enter.call(this, d, evt);
+  highlight(z) {
+    // TODO Make the given z more prominent - two possibilities
+    // this.areas.attr("fill", (d) => d.key === z ? this.colors(d.key) : "#ddd");
+    // this.areas.attr("opacity", (d) => d.key === z ? 1.0 : this.config.BACKGROUND_OPACITY);
+  }
+
+  onEvent(move, leave) {
+    const xs = [...d3.group(this.data, (d) => d.x).keys()];
+    const coords = d3.map(xs, this.x);
+
+    // Organize the data by key and x
+    const indexed = d3.index(
+      this.data,
+      (d) => d.z,
+      (d) => d.x,
+    );
+
+    const pointermove = (evt, d) => {
+      let [xm, ym] = d3.pointer(evt);
+      const index = d3.bisectCenter(coords, xm);
+      const point = indexed.get(d.key).get(xs[index]);
+
+      // Data the will provided to the callback
+      const data = {
+        x: point.x,
+        y: point.y,
+        z: point.z,
+        dx: xm + this.layout.pad.left,
+        dy: ym + this.layout.pad.top,
+      };
+      if (move) {
+        move.call(this, data, evt);
       }
     };
 
-    const pointerleave = (evt) => {
+    const pointerleave = (evt, d) => {
       if (leave) {
-        leave.call(this);
+        leave.call(this, d.key);
       }
     };
 
     this.areas
-      .on("pointerenter", pointerenter)
-      .on("pointerleave", pointerleave)
+      .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
+      .on("pointerleave", pointerleave);
   }
 
   hide(...z) {
@@ -436,4 +462,46 @@ export class TimeSeriesAreaChart extends AreaChart {
 
 export function TimeSeriesArea(data, parser) {
   return new TimeSeriesAreaChart(data, parser);
+}
+
+export class TimeSeriesSharesChart extends TimeSeriesAreaChart {
+  yFormat = d3.format(".0%");
+
+  constructor(data, parser) {
+    super(data, parser);
+
+    // Determine the total per x
+    this.totals = d3.rollup(
+      this.data,
+      (v) => d3.sum(v, (d) => d.y),
+      (d) => d.x,
+    );
+  }
+
+  // Use the stack to calculate shares
+  getStack(data) {
+    // Index the data by x, then by z for each x
+    const indexed = d3.index(
+      data,
+      (d) => d.x,
+      (d) => d.z,
+    );
+
+    // Build the stack, one array per item, with an elem for each quarter
+    const stack = d3
+      .stack()
+      .keys(this.Z)
+      .value(([, group], key) => {
+        const item = group.get(key);
+        const total = this.totals.get(item.x);
+        return item && item.y && total ? item.y / total : 0;
+      })(indexed);
+
+    // Largest items are returned first, since the stack areas are all drawn from zero
+    return stack.reverse();
+  }
+}
+
+export function TimeSeriesShares(data, parser) {
+  return new TimeSeriesSharesChart(data, parser);
 }

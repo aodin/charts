@@ -127,6 +127,11 @@ export class LineChart {
     return this;
   }
 
+  startHidden() {
+    // The first render will have all items hidden
+    this.hidden = new d3.InternSet(this.Z);
+    return this;
+  }
   /* End config chained methods */
 
   get legend() {
