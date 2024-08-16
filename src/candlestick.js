@@ -127,7 +127,7 @@ export class Candlestick {
     return this;
   }
 
-  setBandPadding(value) {
+  bandPadding(value) {
     this.config.BAND_PAD = value;
     return this;
   }

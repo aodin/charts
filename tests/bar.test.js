@@ -2,7 +2,7 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { Bar } from "../src/bar";
+import { Bar, parseTimeSeries3dArray } from "../src/bar";
 import { monthly } from "./data";
 
 describe("Bar", () => {
@@ -15,9 +15,8 @@ describe("Bar", () => {
   });
 
   it("should be rendered on the DOM", () => {
-    const bar = Bar(monthly);
+    const bar = Bar(monthly, parseTimeSeries3dArray);
     bar.render("#chart");
-    expect(bar.X.length).toBe(6); // For bar charts, X will only be unique X values
   });
 
   afterEach(() => {

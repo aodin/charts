@@ -154,7 +154,7 @@ export class AreaChart {
   get legend() {
     // Return the z items along with their colors
     // TODO SHould legend order be reversed?
-    return d3.map(this.Z, (d) => {
+    return d3.map(this.Z.slice().reverse(), (d) => {
       return { key: d, color: this.colors(d) };
     });
   }

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>@aodin/charts: Area</title>
+    <title>@aodin/charts: Area Chart</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style type="text/css">
 body {
@@ -80,7 +80,7 @@ h1 {
   </head>
   <body>
     <div class="title">
-      <h1>Area Chart Example</h1>
+      <h1>Area Chart</h1>
       <button id="reset">Show all</button>
       <button id="hide">Hide all</button>
     </div>
@@ -133,7 +133,7 @@ const area = charts.TimeSeriesArea(data)
 const legend = document.querySelector("#legend");
 const template = document.querySelector("#legendTemplate");
 
-area.legend.reverse().forEach((item) => {
+area.legend.forEach((item) => {
   const clone = template.content.cloneNode(true);
   const div = clone.querySelector("div");
   div.dataset.key = item.key;
