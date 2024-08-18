@@ -381,7 +381,7 @@ export class AreaChart {
       const index = d3.bisectCenter(coords, xm);
       const point = indexed.get(d.key).get(xs[index]);
 
-      // Data the will provided to the callback
+      // Data that will be provided to the callback
       const data = {
         x: point.x,
         y: point.y,

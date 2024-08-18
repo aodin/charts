@@ -493,7 +493,7 @@ export class LineChart {
 
       const d = this.data[index];
 
-      // Data the will provided to the callback
+      // Data that will be provided to the callback
       const data = {
         x: d.x,
         y: d.y,

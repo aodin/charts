@@ -55,7 +55,7 @@ rect {
 }
 #chart-tooltip {
   line-height: 1.4;
-  text-shadow: -1px -1px 0px white,1px -1px 0px white,-1px 1px 0px white,1px 1px 1px white;
+  text-shadow: -1px -1px 0px black,1px -1px 0px black,-1px 1px 0px black,1px 1px 1px black;
 }
 @media (max-width: 600px) {
   #title h1 {
@@ -171,6 +171,54 @@ bar.legend.forEach((item) => {
 });
 
 bar.render("#chart");
+
+
+const tooltip = d3
+  .select("body")
+  .append("div")
+  .attr("id", "chart-tooltip")
+  .style("pointer-events", "none")
+  .style("position", "absolute")
+  .style("opacity", 0)
+  .style("font-size", "13px");
+
+const bbox = document.getElementById("chart-tooltip");
+const rect = document.getElementById("chart");
+
+const monthYear = d3.utcFormat("%b %Y");
+
+function onMove(d) {
+  // bar.highlight(d.key);
+  // bar.highlight(d.z);
+  tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${d.y}`);
+
+  let offsetY = -bbox.offsetHeight - 5;
+  let offsetX = 0;
+  if (d.dx > (5 * rect.offsetWidth) / 6) {
+    // Right side of chart
+    offsetX = -bbox.offsetWidth - 10;
+    tooltip.style("text-align", "right");
+  } else {
+    // Left side of chart
+    tooltip.style("text-align", "left");
+  }
+
+  if (data.dy < (rect.offsetHeight / 4)) {
+    offsetY = 5;
+  }
+
+  tooltip
+    .style("opacity", 1)
+    .style("left", `${d.dx + rect.offsetLeft + offsetX}px`)
+    .style("top", `${d.dy + rect.offsetTop + offsetY}px`);
+}
+
+function onLeave(d) {
+  bar.noHighlight()
+  tooltip.style("opacity", 0);
+}
+
+bar.onEvent(onMove, onLeave);
 
 document.getElementById("reset").addEventListener("click", () => {
   document.querySelectorAll("#legend > div").forEach((div) => {

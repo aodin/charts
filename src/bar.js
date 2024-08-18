@@ -337,15 +337,16 @@ export class BarChart {
     this.gy.call(this.yAxis.bind(this), this.y);
     this.gGrid.call(this.grid.bind(this), this.x, this.y);
 
-    this.slots = gInner
+    this.groups = gInner
       .append("g")
       .selectAll()
       .data(this.stack)
       .join("g")
       .attr("fill", (d) => this.colors(d.key))
-      .attr("class", (d) => className(d.key));
+      .attr("class", (d) => className(d.key))
+      .attr("opacity", 1.0);
 
-    this.bars = this.slots
+    this.bars = this.groups
       .selectAll("rect")
       .data((D) => D)
       .join("rect")
@@ -359,7 +360,7 @@ export class BarChart {
   }
 
   update(x, y) {
-    this.slots.data(this.stack);
+    this.groups.data(this.stack);
     this.bars
       .data((D) => D)
       .transition()
@@ -367,35 +368,34 @@ export class BarChart {
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
       .attr("x", (d, i) => this.x(d.data[0]))
       .attr("y", (d) => this.y(d[1]))
-      .attr("height", (d) => this.y(d[0]) - this.y(d[1]))
-      .attr("width", this.x.bandwidth());
+      .attr("height", (d) => this.y(d[0]) - this.y(d[1]));
+    // .attr("width", this.x.bandwidth());
   }
 
-  noHighlight() {}
+  noHighlight() {
+    this.groups.attr("opacity", 1.0);
+  }
 
-  highlight(z) {}
+  highlight(z) {
+    this.groups.attr("opacity", (d) =>
+      d.key === z ? 1.0 : this.config.BACKGROUND_OPACITY,
+    );
+  }
 
   onEvent(move, leave) {
-    const xs = [...d3.group(this.data, (d) => d.x).keys()];
-    const coords = d3.map(xs, this.x);
-
-    // Organize the data by key and x
-    const indexed = d3.index(
-      this.data,
-      (d) => d.z,
-      (d) => d.x,
-    );
-
     const pointermove = (evt, d) => {
       let [xm, ym] = d3.pointer(evt);
-      const index = d3.bisectCenter(coords, xm);
-      const point = indexed.get(d.key).get(xs[index]);
+
+      // TODO Is this really the best way to get the data?
+      const x = d.data[0];
+      const y = d[1] - d[0];
+      const z = d3.select(evt.srcElement.parentNode).data()[0].key;
 
       // Data the will provided to the callback
       const data = {
-        x: point.x,
-        y: point.y,
-        z: point.z,
+        x: x,
+        y: y,
+        z: z,
         dx: xm + this.layout.pad.left,
         dy: ym + this.layout.pad.top,
       };

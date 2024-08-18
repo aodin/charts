@@ -209,7 +209,7 @@ function onLeave(d) {
   tooltip.style("opacity", 0);
 }
 
-area.onEvent(onMove, onLeave)
+area.onEvent(onMove, onLeave);
 
 document.getElementById("reset").addEventListener("click", () => {
   document.querySelectorAll("#legend > div").forEach((div) => {
