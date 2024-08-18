@@ -5,7 +5,7 @@ import { Window } from "happy-dom";
 import { OHLCV, parseArray } from "../src/candlestick";
 import { candles } from "./data";
 
-describe("Candlestick", () => {
+describe("OHLCV", () => {
   beforeEach(() => {
     global.window = new Window();
     global.window.document.write(

@@ -3,7 +3,6 @@ export * from "./bar";
 export * from "./candlestick";
 export * from "./chart";
 export * from "./colors";
-export * from "./data";
 export * from "./formats";
 export * from "./layout";
 export * from "./line";

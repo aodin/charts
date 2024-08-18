@@ -1,10 +1,11 @@
 import * as d3 from "d3";
 
+import { Chart } from "./chart";
+import { volume } from "./formats";
 import { layoutSVG } from "./layout";
+import { throttle } from "./throttle";
 import { maxLabelSize, filterTicks } from "./ticks";
 import { makeDateFormatter } from "./timeseries";
-import { throttle } from "./throttle";
-import { volume } from "./formats";
 
 export function parseArray(d) {
   return {
@@ -69,13 +70,15 @@ function invertBand(scale, x) {
   return Math.max(0, Math.min(index, domain.length - 1));
 }
 
-export class Candlestick {
+export class CandlestickChart extends Chart {
   // Allow a custom formatting of prices, setting null will use default formats
   priceFormat = d3.format(",~f");
 
-  // Candlestick expects data in the format [{x, o, h, l, c, v}...]
+  // CandlestickChart expects data in the format [{x, o, h, l, c, v}...]
   // Specify a parser if your input data is in a different format
   constructor(data, parser = (d) => d) {
+    super(data, parser);
+
     // Default config
     this.config = {
       VOLUME_RATIO: 0.0,
@@ -112,15 +115,6 @@ export class Candlestick {
   }
 
   /* Config chained methods */
-  animationDuration(value) {
-    this.config.DURATION_MS = value;
-    return this;
-  }
-
-  noAnimation() {
-    return this.animationDuration(0);
-  }
-
   doNotRescaleY() {
     // Do not rescale the Y axis on zoom
     this.config.RESCALE_Y = false;
@@ -168,11 +162,6 @@ export class Candlestick {
 
   defaultLinear() {
     this.config.LOG_Y = false;
-    return this;
-  }
-
-  screenHeightPercent(value) {
-    this.config.SCREEN_HEIGHT_PERCENT = value;
     return this;
   }
   /* End config chained methods */
@@ -673,9 +662,9 @@ export class Candlestick {
 }
 
 export function OHLC(data, parser) {
-  return new Candlestick(data, parser);
+  return new CandlestickChart(data, parser);
 }
 
 export function OHLCV(data, parser) {
-  return new Candlestick(data, parser).showVolume();
+  return new CandlestickChart(data, parser).showVolume();
 }

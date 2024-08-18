@@ -3,7 +3,7 @@ Bar chart
 */
 import * as d3 from "d3";
 
-import { quantizeScheme } from "./colors";
+import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { className } from "./text";
 import { maxLabelSize, filterTicks } from "./ticks";
@@ -26,13 +26,14 @@ export function parseTimeSeries3dArray(d) {
   };
 }
 
-export class BarChart {
+export class BarChart extends CategoricalChart {
   xFormat = null;
   yFormat = null;
 
   // Bar charts expect data is the format [{x, y, z}...]
-  // Specify a parser or override parse() if your input data is in a different format
+  // Specify a parser if your input data is in a different format
   constructor(data, parser = (d) => d) {
+    super(data, parser);
     // Default config
     this.config = {
       SCREEN_HEIGHT_PERCENT: 0.5,
@@ -75,53 +76,6 @@ export class BarChart {
   }
 
   /* Config chained methods */
-  screenHeightPercent(value) {
-    this.config.SCREEN_HEIGHT_PERCENT = value;
-    return this;
-  }
-
-  animationDuration(value) {
-    this.config.DURATION_MS = value;
-    return this;
-  }
-
-  noAnimation() {
-    return this.animationDuration(0);
-  }
-
-  backgroundOpacity(value) {
-    this.config.BACKGROUND_OPACITY = value;
-    return this;
-  }
-
-  yAxisRight() {
-    // The y axis ticks and labels will be shown on the right of the chart
-    this.config.Y_AXIS_RIGHT = true;
-    return this;
-  }
-
-  useDiscreteScheme(scheme) {
-    this.colors = d3.scaleOrdinal().domain(this.Z).range(scheme);
-    return this;
-  }
-
-  useContinuousScheme(scheme, min = 0.0, max = 1.0) {
-    return this.useDiscreteScheme(
-      quantizeScheme(this.Z.length, scheme, min, max),
-    );
-  }
-
-  invertScheme() {
-    this.colors = this.colors.range(this.colors.range().reverse());
-    return this;
-  }
-
-  startHidden() {
-    // The first render will have all items hidden
-    this.hidden = new d3.InternSet(this.Z);
-    return this;
-  }
-
   bandPadding(value) {
     this.config.BAND_PAD = value;
     return this;
@@ -413,32 +367,6 @@ export class BarChart {
     this.bars
       .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
       .on("pointerleave", pointerleave);
-  }
-
-  hide(...z) {
-    // Add the given z elements to the hidden set
-    this.hidden = this.hidden.union(new d3.InternSet(z));
-    this.toggle();
-  }
-
-  show(...z) {
-    // Remove the given z elements from the hidden set
-    this.hidden = this.hidden.difference(new d3.InternSet(z));
-    this.toggle();
-  }
-
-  setHidden(...z) {
-    this.hidden = new d3.InternSet(z);
-  }
-
-  hideAll() {
-    this.hidden = new d3.InternSet(this.Z);
-    this.toggle();
-  }
-
-  showAll() {
-    this.hidden.clear();
-    this.toggle();
   }
 
   toggle() {
