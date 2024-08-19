@@ -132,7 +132,7 @@ export class BarChart extends CategoricalChart {
 
   get yDomain() {
     // Always show the full y Axis
-    return [0, d3.max(this.fullStack[0], (d) => d[1])];
+    return d3.extent(this.fullStack.flat().flat());
   }
 
   get xScale() {
@@ -172,6 +172,14 @@ export class BarChart extends CategoricalChart {
   grid(g, x, y) {
     // Separating the grid from the axes allows more control of its positioning
     g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
+  }
+
+  groupClass(d, i) {
+    return className(d.key);
+  }
+
+  barClass(d, i) {
+    return "";
   }
 
   updateLayout() {
@@ -284,16 +292,17 @@ export class BarChart extends CategoricalChart {
       .data(this.stack)
       .join("g")
       .attr("fill", (d) => this.colors(d.key))
-      .attr("class", (d) => className(d.key))
+      .attr("class", this.groupClass)
       .attr("opacity", 1.0);
 
     this.bars = this.groups
       .selectAll("rect")
       .data((D) => D)
       .join("rect")
+      .attr("class", this.barClass)
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
-      .attr("x", (d, i) => this.x(d.data[0]))
-      .attr("y", (d) => this.layout.innerHeight)
+      .attr("x", (d) => this.x(d.data[0]))
+      .attr("y", (d) => this.y(0))
       .attr("height", (d) => 0)
       .attr("width", this.x.bandwidth());
 
@@ -308,9 +317,13 @@ export class BarChart extends CategoricalChart {
       .duration(this.config.DURATION_MS)
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
       .attr("x", (d, i) => this.x(d.data[0]))
-      .attr("y", (d) => this.y(d[1]))
-      .attr("height", (d) => this.y(d[0]) - this.y(d[1]));
-    // .attr("width", this.x.bandwidth());
+      .attr("y", (d) => (d[1] > d[0] ? this.y(d[1]) : this.y(d[0])))
+      .attr("height", (d) => {
+        if (d[1] > d[0]) {
+          return this.y(d[0]) - this.y(d[1]);
+        }
+        return this.y(d[1]) - this.y(d[0]);
+      });
   }
 
   noHighlight() {
