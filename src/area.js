@@ -5,25 +5,12 @@ import * as d3 from "d3";
 
 import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
+import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
 import { className } from "./text";
 import { maxLabelSize } from "./ticks";
 import { throttle } from "./throttle";
 
-export function parse3dArray(d) {
-  return {
-    x: d[0],
-    y: d[1],
-    z: d[2],
-  };
-}
-
-export function parseTimeSeries3dArray(d) {
-  return {
-    x: d3.isoParse(d[0]),
-    y: d[1],
-    z: d[2],
-  };
-}
+export { parse3dArray, parseTimeSeries3dArray };
 
 export class AreaChart extends CategoricalChart {
   xFormat = null;

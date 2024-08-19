@@ -2,7 +2,7 @@
 import { expect, describe, it, beforeEach, afterEach } from "vitest";
 import { Window } from "happy-dom";
 
-import { OHLCV, parseArray } from "../src/candlestick";
+import { OHLCV, parseArrayOHLCV } from "../src/candlestick";
 import { candles } from "./data";
 
 describe("OHLCV", () => {
@@ -15,7 +15,7 @@ describe("OHLCV", () => {
   });
 
   it("should be rendered on the DOM", () => {
-    const ohlcv = OHLCV(candles, parseArray);
+    const ohlcv = OHLCV(candles, parseArrayOHLCV);
     ohlcv.render("#chart");
     expect(ohlcv.data.length).toBe(candles.length);
 
