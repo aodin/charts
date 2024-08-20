@@ -1,37 +1,25 @@
 /*
-Line chart
+Line chart with zoom
 */
 import * as d3 from "d3";
 
-import { quantizeScheme } from "./colors";
+import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
+import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
 import { className } from "./text";
 import { maxLabelSize } from "./ticks";
 import { throttle } from "./throttle";
 
-export function parse3dArray(d) {
-  return {
-    x: d[0],
-    y: d[1],
-    z: d[2],
-  };
-}
+export { parse3dArray, parseTimeSeries3dArray };
 
-export function parseTimeSeries3dArray(d) {
-  return {
-    x: d3.isoParse(d[0]),
-    y: d[1],
-    z: d[2],
-  };
-}
-
-export class LineChartWithZoom {
+export class LineChartWithZoom extends CategoricalChart {
   xFormat = null;
   yFormat = null;
 
   // Line charts expect data is the format [{x, y, z}...]
-  // Specify a parser or override parse() if your input data is in a different format
+  // Specify a parser if your input data is in a different format
   constructor(data, parser = (d) => d) {
+    super(data, parser);
     // Default config
     this.config = {
       SCREEN_HEIGHT_PERCENT: 0.5,
@@ -41,14 +29,11 @@ export class LineChartWithZoom {
       STROKE_WIDTH: 1.5, // Width when not highlighted
       DOT_RADIUS: 3.0, // Radius of the dot
       ZOOM_EXTENT: [0.5, 32],
-      COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
+      COLORS: d3.schemeCategory10,
 
       // Additional margins
       MARGIN_TICK: 3,
     };
-
-    // Items can be dynamically hidden from the chart
-    this.hidden = new Set();
 
     this.data = this.parseData(data, parser);
     this.items = this.parseItems(data);
@@ -75,31 +60,6 @@ export class LineChartWithZoom {
   }
 
   /* Config chained methods */
-  screenHeightPercent(value) {
-    this.config.SCREEN_HEIGHT_PERCENT = value;
-    return this;
-  }
-
-  animationDuration(value) {
-    this.config.DURATION_MS = value;
-    return this;
-  }
-
-  noAnimation() {
-    return this.animationDuration(0);
-  }
-
-  useDiscreteScheme(scheme) {
-    this.colors = d3.scaleOrdinal().domain(this.Z).range(scheme);
-    return this;
-  }
-
-  useContinuousScheme(scheme, min = 0.0, max = 1.0) {
-    return this.useDiscreteScheme(
-      quantizeScheme(this.Z.length, scheme, min, max),
-    );
-  }
-
   zoomExtent(min, max) {
     this.config.ZOOM_EXTENT = [min, max];
     return this;

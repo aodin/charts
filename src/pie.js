@@ -28,7 +28,7 @@ export class PieChart extends CategoricalChart {
       END_ANGLE: 2 * Math.PI,
       INITIAL_CLOSED: false,
       SKIP_ENTER_ANIMATION: false,
-      COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
+      COLORS: d3.schemeCategory10,
     };
 
     this.data = d3.map(data, parser);

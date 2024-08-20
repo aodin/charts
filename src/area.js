@@ -27,7 +27,7 @@ export class AreaChart extends CategoricalChart {
       DURATION_MS: 500,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       Y_AXIS_RIGHT: false,
-      COLORS: d3.schemeCategory10, // TODO There's no way to change the default yet
+      COLORS: d3.schemeCategory10,
 
       // Additional margins
       MARGIN_TICK: 3,
