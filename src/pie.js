@@ -3,37 +3,18 @@ Pie chart (or donut)
 */
 import * as d3 from "d3";
 
+import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
+import { parse3dArray, parseTimeSeries3dArray, parseArrayYZ } from "./parsers";
 
-export function parse3dArray(d) {
-  return {
-    x: d[0],
-    y: d[1],
-    z: d[2],
-  };
-}
+export { parse3dArray, parseTimeSeries3dArray, parseArrayYZ };
 
-export function parse2dArray(d) {
-  // For data without an x-axis
-  return {
-    x: null,
-    y: d[0],
-    z: d[1],
-  };
-}
-
-export function parseTimeSeries3dArray(d) {
-  return {
-    x: d3.isoParse(d[0]),
-    y: d[1],
-    z: d[2],
-  };
-}
-
-export class PieChart {
+export class PieChart extends CategoricalChart {
   // Pie charts expect data is the format [{x, y, z}...]
   // Specify a parser if your input data is in a different format
   constructor(data, parser = (d) => d) {
+    super(data, parser);
+
     // Default config
     this.config = {
       SCREEN_HEIGHT_PERCENT: 0.5,
@@ -62,33 +43,6 @@ export class PieChart {
   }
 
   /* Config chained methods */
-  screenHeightPercent(value) {
-    this.config.SCREEN_HEIGHT_PERCENT = value;
-    return this;
-  }
-
-  animationDuration(value) {
-    this.config.DURATION_MS = value;
-    return this;
-  }
-
-  noAnimation() {
-    return this.animationDuration(0);
-  }
-
-  useDiscreteScheme(scheme) {
-    this.colors = d3.scaleOrdinal().domain(this.Z).range(scheme);
-    return this;
-  }
-
-  useContinuousScheme(scheme, min = 0.0, max = 1.0) {
-    const colors = d3.quantize(
-      (t) => scheme(t * (max - min) + min),
-      this.Z.length,
-    );
-    return this.useDiscreteScheme(colors);
-  }
-
   radii(inner, outer) {
     // Set radii
     this.config.INNER_RADIUS = inner;

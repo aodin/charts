@@ -37,3 +37,21 @@ export function parseTimeSeries3dArray(d) {
     z: d[2],
   };
 }
+
+export function parseTimeSeries2dArray(d) {
+  // No z axis
+  return {
+    x: d3.isoParse(d[0]),
+    y: d[1],
+    z: "",
+  };
+}
+
+export function parseArrayYZ(d) {
+  // For data without an x-axis
+  return {
+    x: null,
+    y: d[0],
+    z: d[1],
+  };
+}

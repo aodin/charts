@@ -35,9 +35,6 @@ export class BarChart extends CategoricalChart {
       MARGIN_TICK: 3,
     };
 
-    // Items can be dynamically hidden from the chart
-    this.hidden = new d3.InternSet();
-
     this.data = this.parseData(data, parser);
     this.items = this.parseItems(data);
     this.Z = this.parseZ(data);
