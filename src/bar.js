@@ -30,6 +30,8 @@ export class BarChart extends CategoricalChart {
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       Y_AXIS_RIGHT: false,
       COLORS: d3.schemeCategory10,
+      STACK_ORDER: d3.stackOrderNone, // E.g. stackOrderAppearance
+      STACK_OFFSET: d3.stackOffsetNone, // E.g. stackOffsetDiverging, stackOffsetNone
 
       // Additional margins
       MARGIN_TICK: 3,
@@ -90,7 +92,9 @@ export class BarChart extends CategoricalChart {
       .value(([, group], key) => {
         const item = group.get(key);
         return item && item.y ? item.y : 0;
-      })(indexed);
+      })
+      .offset(this.config.STACK_OFFSET)
+      .order(this.config.STACK_ORDER)(indexed);
 
     // Largest items are returned first, since the stack areas are all drawn from zero
     return stack.reverse();
@@ -244,6 +248,23 @@ export class BarChart extends CategoricalChart {
 
     this.svg.attr("clip-path", "url(#inner-clip-path)");
 
+    // First items drawn are lower layers
+    this.gGrid = this.svg
+      .append("g")
+      .attr("class", "grid")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
+      );
+
+    const gInner = this.svg
+      .append("g")
+      .attr("class", "inner")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
+      );
+
     this.gx = this.svg
       .append("g")
       .attr("class", "x axis")
@@ -261,22 +282,6 @@ export class BarChart extends CategoricalChart {
       .append("g")
       .attr("class", "y axis")
       .attr("transform", yTransform);
-
-    this.gGrid = this.svg
-      .append("g")
-      .attr("class", "grid")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
-      );
-
-    const gInner = this.svg
-      .append("g")
-      .attr("class", "inner")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
-      );
 
     // Set initial state
     this.gx.call(this.xAxis.bind(this), this.x).attr("opacity", 1.0);
@@ -315,12 +320,19 @@ export class BarChart extends CategoricalChart {
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
       .attr("x", (d, i) => this.x(d.data[0]))
       .attr("y", (d) => (d[1] > d[0] ? this.y(d[1]) : this.y(d[0])))
+      // .attr("y", (d) => (d[1] > d[0] ? this.y(d[1]) : this.y(d[0])))
       .attr("height", (d) => {
         if (d[1] > d[0]) {
           return this.y(d[0]) - this.y(d[1]);
         }
         return this.y(d[1]) - this.y(d[0]);
       });
+    // .attr("height", (d) => {
+    //   if (d[1] > d[0]) {
+    //     return this.y(d[0]) - this.y(d[1]);
+    //   }
+    //   return this.y(d[1]) - this.y(d[0]);
+    // });
   }
 
   noHighlight() {
@@ -458,6 +470,9 @@ export function TimeSeriesBar(data, parser) {
 }
 
 export class TimeSeriesBarSharesChart extends TimeSeriesBarChart {
+  // NOTE Although d3.stackOffsetExpand works great for static charts, we need a
+  // different strategy to handle dynamic hiding and showing of data
+  // Use d3.stackOffsetExpand if you want the visible items to always total 100%
   yFormat = d3.format(".0%");
 
   constructor(data, parser) {
@@ -492,6 +507,11 @@ export class TimeSeriesBarSharesChart extends TimeSeriesBarChart {
 
     // Largest items are returned first, since the stack are all drawn from zero
     return stack.reverse();
+  }
+
+  get yDomain() {
+    // Share charts will always be 0 to 1.0
+    return [0.0, 1.0];
   }
 }
 

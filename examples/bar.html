@@ -18,8 +18,14 @@ rect {
 .domain {
   display: none;
 }
+.x .domain {
+  display: block !important;
+}
 #chart svg {
   shape-rendering: crispEdges;
+}
+.grid line {
+  opacity: 0.5;
 }
 
 /* Legend */
@@ -55,7 +61,8 @@ rect {
 }
 #chart-tooltip {
   line-height: 1.4;
-  text-shadow: -1px -1px 0px black,1px -1px 0px black,-1px 1px 0px black,1px 1px 1px black;
+  font-size: 18px !important;
+  text-shadow: -1px -1px 0px black, 1px -1px 0px black, -1px 1px 0px black, 1px 1px 1px black, -1px 0px 0px black, 1px 0px 0px black, 0px 1px 0px black, 0px -1px 0px black;
 }
 @media (max-width: 600px) {
   #title h1 {

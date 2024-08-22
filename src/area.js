@@ -217,6 +217,23 @@ export class AreaChart extends CategoricalChart {
 
     this.svg.attr("clip-path", "url(#inner-clip-path)");
 
+    // First items drawn are lower layers
+    this.gGrid = this.svg
+      .append("g")
+      .attr("class", "grid")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
+      );
+
+    const gInner = this.svg
+      .append("g")
+      .attr("class", "inner")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
+      );
+
     this.gx = this.svg
       .append("g")
       .attr("class", "x axis")
@@ -234,22 +251,6 @@ export class AreaChart extends CategoricalChart {
       .append("g")
       .attr("class", "y axis")
       .attr("transform", yTransform);
-
-    this.gGrid = this.svg
-      .append("g")
-      .attr("class", "grid")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
-      );
-
-    const gInner = this.svg
-      .append("g")
-      .attr("class", "inner")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
-      );
 
     // Set initial state
     this.gx.call(this.xAxis.bind(this), this.x).attr("opacity", 1.0);
