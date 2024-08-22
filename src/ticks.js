@@ -21,12 +21,12 @@ export function maxLabelSize(svg, layout, scale, format = null, cls = "") {
   let width = 0;
   let height = 0;
   labels.each(function () {
-    const bbox = this.getBoundingClientRect(); // TODO Or getBBox?
-    if (bbox.width > width) {
-      width = bbox.width;
+    const elem = this.getBoundingClientRect(); // TODO Or getBBox?
+    if (elem.width > width) {
+      width = elem.width;
     }
-    if (bbox.height > height) {
-      height = bbox.height;
+    if (elem.height > height) {
+      height = elem.height;
     }
   });
 
@@ -40,9 +40,10 @@ In order to filter categorical ticks, we need:
 2. the total available width for the axes in the layout
 3. the interval that will fit that largest label without overlap
 4. then filter the available tick labels by the interval
+An optional offset can be provided, which will skip the ticks with a lower index
 */
-export function filterTicks(ticks, layout, labelWidth) {
+export function filterTicks(ticks, layout, labelWidth, offset = 0) {
   const count = parseInt(layout.innerWidth / (labelWidth + 1)) + 1;
   const interval = d3.max([parseInt(Math.ceil(ticks.length / count)), 1]);
-  return d3.filter(ticks, (d, i) => i % interval === 0);
+  return d3.filter(ticks, (d, i) => i >= offset && i % interval === 0);
 }

@@ -9,10 +9,10 @@ test("lowerBoundDigits", () => {
 });
 
 const xyz = [
-  {x: "A", y: 1000, z: "A"},
-  {x: "B", y: null, z: "C"},
-  {x: "B", y: 0, z: "C"},
-]
+  { x: "A", y: 1000, z: "A" },
+  { x: "B", y: null, z: "C" },
+  { x: "B", y: 0, z: "C" },
+];
 
 test("divideData", () => {
   const divided = divideData(xyz, 1000);

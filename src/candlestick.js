@@ -83,7 +83,7 @@ export class CandlestickChart extends Chart {
     };
 
     // Get data in a {x, o, h, l, c, v} format
-    // TODO Warn if data wasn't parsed
+    // TODO Warn if data wasn't parsed correctly
     this.data = d3.map(data, parser);
 
     // Also save the X axis, since it is used for filtering tick labels
@@ -179,6 +179,10 @@ export class CandlestickChart extends Chart {
   get wickThickness() {
     // Wick thickness should at least one pixel, but no greater than 1% of the band
     return d3.max([this.scaleX.bandwidth() * 0.01, 1.0]);
+  }
+
+  makeDateFormatter() {
+    return makeDateFormatter();
   }
 
   render(selector) {
@@ -284,7 +288,7 @@ export class CandlestickChart extends Chart {
 
     // NOTE The date formatter needs to be created because it uses a
     // closure to determine a new year
-    let dates = makeDateFormatter();
+    let dates = this.makeDateFormatter();
 
     // Get the max tick label width for the x-axis
     const [labelWidthX, labelHeight] = maxLabelSize(
@@ -298,7 +302,7 @@ export class CandlestickChart extends Chart {
     const filteredX = filterTicks(this.X, this.layout, this.labelWidthX);
 
     // Reset the date formatter
-    dates = makeDateFormatter();
+    dates = this.makeDateFormatter();
 
     // Set the zero state
     this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
@@ -465,6 +469,9 @@ export class CandlestickChart extends Chart {
     const axisY = this.priceAxisIndex;
 
     // Re-filter the X-axis date labels
+    // TODO Since we know the labelWidthX, we can determine automatically based on the
+    // left padding if the x ticks should start on a non-zero bar
+    // console.log(this.labelWidthX, this.layout.pad.left, this.scaleX.bandwidth())
     const filteredX = filterTicks(
       this.X.slice(this.start, this.end + 1),
       this.layout,
@@ -472,7 +479,7 @@ export class CandlestickChart extends Chart {
     );
 
     // Reset the date formatter
-    const dates = makeDateFormatter();
+    const dates = this.makeDateFormatter();
     this.axisX.tickValues(filteredX).tickFormat(dates);
 
     // Update the x-axis

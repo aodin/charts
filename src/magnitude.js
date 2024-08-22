@@ -13,6 +13,6 @@ export function lowerBoundDigits(values, bound = 0.1) {
   return null;
 }
 
-export function divideData(data, value=1.0) {
-  return d3.map(data, (d) => ({...d, y: d.y ? d.y / value : d.y}));
+export function divideData(data, value = 1.0) {
+  return d3.map(data, (d) => ({ ...d, y: d.y ? d.y / value : d.y }));
 }

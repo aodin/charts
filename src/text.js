@@ -1,4 +1,3 @@
-
 const invalidChars = /[^a-zA-Z0-9_-]/g;
 const invalidStart = /^[^a-zA-Z_]/;
 
@@ -9,7 +8,7 @@ export function className(value) {
 
   // Prepend an underscore if the name starts will an invalid character
   if (invalidStart.test(value)) {
-    value = '_' + value;
+    value = "_" + value;
   }
   return value;
 }

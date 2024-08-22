@@ -160,7 +160,7 @@ const percent = new Intl.NumberFormat('en-US', {
   signDisplay: 'exceptZero',
 }).format;
 
-const ohlcv = charts.OHLCV(data, charts.parseArray)
+const ohlcv = charts.OHLCV(data, charts.parseArrayOHLCV)
   .screenHeightPercent(0.8)
   .priceAxisRight();
 ohlcv.render("#chart");
