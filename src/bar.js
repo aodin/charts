@@ -13,6 +13,36 @@ import { throttle } from "./throttle";
 
 export { parse3dArray, parseTimeSeries3dArray };
 
+function consistentOrderDiverging(fullStack) {
+  // NOTE getStack() reverses the stack
+  let stack = fullStack.slice().reverse();
+  return function (series, order) {
+    if (!((n = series.length) > 0)) return;
+    for (
+      var i, j = 0, prev, d, dy, yp, yn, n, m = series[order[0]].length;
+      j < m;
+      ++j
+    ) {
+      for (yp = yn = 0, i = 0; i < n; ++i) {
+        if ((dy = (d = series[order[i]][j])[1] - d[0]) > 0) {
+          (d[0] = yp), (d[1] = yp += dy);
+        } else if (dy < 0) {
+          (d[1] = yn), (d[0] = yn += dy);
+        } else {
+          // If the item is zero, place it on the correct stack for its full value
+          if ((prev = stack[i][j][0]) > 0) {
+            (d[0] = yp), (d[1] = yp += dy);
+          } else if (prev < 0) {
+            (d[1] = yn), (d[0] = yn += dy);
+          } else {
+            (d[0] = 0), (d[1] = dy);
+          }
+        }
+      }
+    }
+  };
+}
+
 export class BarChart extends CategoricalChart {
   xFormat = null;
   yFormat = null;
@@ -31,7 +61,7 @@ export class BarChart extends CategoricalChart {
       Y_AXIS_RIGHT: false,
       COLORS: d3.schemeCategory10,
       STACK_ORDER: d3.stackOrderNone, // E.g. stackOrderAppearance
-      STACK_OFFSET: d3.stackOffsetNone, // E.g. stackOffsetDiverging, stackOffsetNone
+      STACK_OFFSET: d3.stackOffsetDiverging, // E.g. stackOffsetDiverging, stackOffsetNone
 
       // Additional margins
       MARGIN_TICK: 3,
@@ -107,7 +137,7 @@ export class BarChart extends CategoricalChart {
 
   get fullStack() {
     // All data
-    return this.getStack(this.data);
+    return this._fullStack;
   }
 
   get legend() {
@@ -223,6 +253,10 @@ export class BarChart extends CategoricalChart {
     // If there is no data, do not render
     if (!this.data.length) return;
 
+    // Calculate the full stack and cache it
+    this._fullStack = this.getStack(this.data);
+    this.config.STACK_OFFSET = consistentOrderDiverging(this._fullStack);
+
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
@@ -320,19 +354,12 @@ export class BarChart extends CategoricalChart {
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
       .attr("x", (d, i) => this.x(d.data[0]))
       .attr("y", (d) => (d[1] > d[0] ? this.y(d[1]) : this.y(d[0])))
-      // .attr("y", (d) => (d[1] > d[0] ? this.y(d[1]) : this.y(d[0])))
       .attr("height", (d) => {
         if (d[1] > d[0]) {
           return this.y(d[0]) - this.y(d[1]);
         }
         return this.y(d[1]) - this.y(d[0]);
       });
-    // .attr("height", (d) => {
-    //   if (d[1] > d[0]) {
-    //     return this.y(d[0]) - this.y(d[1]);
-    //   }
-    //   return this.y(d[1]) - this.y(d[0]);
-    // });
   }
 
   noHighlight() {
