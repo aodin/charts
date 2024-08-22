@@ -35,10 +35,10 @@
     "d3": "^7.9.0"
   },
   "devDependencies": {
-    "esbuild": "^0.23.0",
+    "esbuild": "^0.23.1",
     "esbuild-plugin-external-global": "^1.0.1",
-    "happy-dom": "^14.12.3",
+    "happy-dom": "^15.0.0",
     "prettier": "^3.3.3",
-    "vitest": "^2.0.3"
+    "vitest": "^2.0.5"
   }
 }
