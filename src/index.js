@@ -11,6 +11,7 @@ export * from "./options";
 export * from "./pie";
 export * from "./text";
 export * from "./throttle";
+export * from "./tooltip";
 export * from "./ticks";
 export * from "./timeseries";
 export * from "./zoom";
