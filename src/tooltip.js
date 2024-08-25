@@ -1,7 +1,7 @@
 export function placeTooltip(container, tooltip, dx, dy, padding = 5) {
-  // Return x and y offsets and the text-align that will optimally place the tooltip
-  // in the container. The container and tooltip must be DOM elements with offset
-  // properties. The dx and dy should be relative to the top-left of the container.
+  // Returns x and y page coordinates and text-align that will optimally place the
+  // tooltip in the container. The container and tooltip must be DOM elements with
+  // offset properties. The dx and dy should be relative to the top-left of the svg.
   let x = 0;
   let y = -tooltip.offsetHeight - padding;
   let align = "left";
@@ -13,10 +13,18 @@ export function placeTooltip(container, tooltip, dx, dy, padding = 5) {
     align = "right";
   }
 
-  if (dy < container.offsetHeight - tooltip.offsetHeight - padding) {
+  if (dy < tooltip.offsetHeight + padding) {
     // Top of the container
     y = padding;
   }
 
-  return [x, y, align];
+  console.log(
+    "D",
+    dx,
+    dy,
+    "T",
+    x + container.offsetLeft + dx,
+    y + container.offsetTop + dy,
+  );
+  return [x + container.offsetLeft + dx, y + container.offsetTop + dy, align];
 }

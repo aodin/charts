@@ -129,8 +129,14 @@ export function appendSVG(selector, width, height) {
     .style("overflow", "visible");
 }
 
-export function layoutSVG(selector, config) {
+export function layoutSVG(selector, options) {
   // Return the SVG elements and its layout
+  // Available options:
+  // * screenHeightPercent
+  // * minWidth
+  // * maxWidth
+  // * minHeight
+  // * maxHeight
   const elem = d3.select(selector);
   if (!elem.node()) {
     throw new Error(`Unable to find a DOM element for selector '${selector}'`);
@@ -145,16 +151,12 @@ export function layoutSVG(selector, config) {
       return [svg, new Layout(width, height)];
     } else {
       // TODO SVGs must have a width or height or the defaults will be returned
-      const layout = getLayout(selector, {
-        screenHeightPercent: config.SCREEN_HEIGHT_PERCENT,
-      });
+      const layout = getLayout(selector, options);
       return [svg, layout];
     }
   }
 
-  const layout = getLayout(selector, {
-    screenHeightPercent: config.SCREEN_HEIGHT_PERCENT,
-  });
+  const layout = getLayout(selector, options);
   const svg = appendSVG(selector, layout.width, layout.height);
   return [svg, layout];
 }

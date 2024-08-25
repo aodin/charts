@@ -7,10 +7,11 @@ import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
 import { className } from "./text";
-import { maxLabelSize } from "./ticks";
 import { throttle } from "./throttle";
+import { maxLabelSize } from "./ticks";
+import { placeTooltip } from "./tooltip";
 
-export { parse3dArray, parseTimeSeries3dArray };
+export { parse3dArray, parseTimeSeries3dArray, placeTooltip };
 
 export class AreaChart extends CategoricalChart {
   xFormat = null;
@@ -23,7 +24,7 @@ export class AreaChart extends CategoricalChart {
 
     // Default config
     this.config = {
-      SCREEN_HEIGHT_PERCENT: 0.5,
+      LAYOUT: {},
       DURATION_MS: 500,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       Y_AXIS_RIGHT: false,
@@ -195,7 +196,7 @@ export class AreaChart extends CategoricalChart {
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config);
+    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
 
     // Create fake axes to measure label sizes and update layout
     this.updateLayout();
@@ -315,7 +316,7 @@ export class AreaChart extends CategoricalChart {
     );
 
     const pointermove = (evt, d) => {
-      let [xm, ym] = d3.pointer(evt);
+      let [xm, ym] = d3.pointer(evt, this.gInner);
       const index = d3.bisectCenter(coords, xm);
       const point = indexed.get(d.key).get(xs[index]);
 

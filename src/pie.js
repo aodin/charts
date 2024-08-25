@@ -6,8 +6,9 @@ import * as d3 from "d3";
 import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray, parseArrayYZ } from "./parsers";
+import { placeTooltip } from "./tooltip";
 
-export { parse3dArray, parseTimeSeries3dArray, parseArrayYZ };
+export { parse3dArray, parseTimeSeries3dArray, parseArrayYZ, placeTooltip };
 
 export class PieChart extends CategoricalChart {
   // Pie charts expect data is the format [{x, y, z}...]
@@ -17,7 +18,7 @@ export class PieChart extends CategoricalChart {
 
     // Default config
     this.config = {
-      SCREEN_HEIGHT_PERCENT: 0.5,
+      LAYOUT: {},
       DURATION_MS: 500,
       INNER_RADIUS: 0.3,
       OUTER_RADIUS: 0.8,
@@ -105,7 +106,7 @@ export class PieChart extends CategoricalChart {
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config);
+    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
 
     // By default, show the latest quarter of data
     // TODO Option to change default - or just use update()?

@@ -35,10 +35,9 @@ const data = [
   [50, "D"],
   [30, "E"],
 ];
-const pie = charts.Gauge(data, charts.parse2dArray)
+const pie = charts.Gauge(data, charts.parseArrayYZ)
   .useDiscreteScheme(d3.schemeTableau10);
 pie.render("#chart svg");
-
 
 function onEnter(d, evt) {
   pie.enlarge(d.data.z, true);

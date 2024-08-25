@@ -7,10 +7,11 @@ import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
 import { className } from "./text";
-import { maxLabelSize } from "./ticks";
 import { throttle } from "./throttle";
+import { maxLabelSize } from "./ticks";
+import { placeTooltip } from "./tooltip";
 
-export { parse3dArray, parseTimeSeries3dArray };
+export { parse3dArray, parseTimeSeries3dArray, placeTooltip };
 
 function getLength(elem) {
   // Not all DOMs support getTotalLength
@@ -28,7 +29,7 @@ export class LineChart extends CategoricalChart {
 
     // Default config
     this.config = {
-      SCREEN_HEIGHT_PERCENT: 0.5,
+      LAYOUT: {},
       DURATION_MS: 500,
       Y_AXIS_RIGHT: false,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
@@ -65,6 +66,13 @@ export class LineChart extends CategoricalChart {
   setColors(data) {
     return d3.scaleOrdinal().domain(this.Z).range(this.config.COLORS);
   }
+
+  /* Chained config methods */
+  hideIfEmpty() {
+    this.config.HIDE_EMPTY_CHART = true;
+    return this;
+  }
+  /* End chained config methods */
 
   get legend() {
     // Return the z items along with their colors
@@ -184,7 +192,7 @@ export class LineChart extends CategoricalChart {
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config);
+    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
 
     // Create fake axes to measure label sizes and update layout
     this.updateLayout();
@@ -206,6 +214,23 @@ export class LineChart extends CategoricalChart {
 
     this.svg.attr("clip-path", "url(#inner-clip-path)");
 
+    // First items drawn are lower layers
+    this.gGrid = this.svg
+      .append("g")
+      .attr("class", "grid")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
+      );
+
+    this.gInner = this.svg
+      .append("g")
+      .attr("class", "inner")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
+      );
+
     this.gx = this.svg
       .append("g")
       .attr("class", "x axis")
@@ -224,25 +249,9 @@ export class LineChart extends CategoricalChart {
       .attr("class", "y axis")
       .attr("transform", yTransform);
 
-    this.gGrid = this.svg
-      .append("g")
-      .attr("class", "grid")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
-      );
-
-    const gInner = this.svg
-      .append("g")
-      .attr("class", "inner")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
-      );
-
     const grouping = d3.group(this.data, (d) => d.z);
 
-    this.paths = gInner
+    this.paths = this.gInner
       .append("g")
       .attr("fill", "none")
       .attr("stroke-width", this.config.STROKE_WIDTH)
@@ -251,7 +260,10 @@ export class LineChart extends CategoricalChart {
       .join("path");
 
     // Dot - shows nearest point during pointer events
-    this.dot = gInner.append("g").attr("class", "dot").style("display", "none");
+    this.dot = this.gInner
+      .append("g")
+      .attr("class", "dot")
+      .style("display", "none");
     this.circle = this.dot.append("circle").attr("r", this.config.DOT_RADIUS);
 
     // The initial line drawing animation relies on manipulating stroke attributes,
@@ -403,10 +415,10 @@ export class LineChart extends CategoricalChart {
 
     // Determine the closest point to the cursor
     const pointermove = (evt) => {
-      let [xm, ym] = d3.pointer(evt);
       // X and y scales use the inner element, which is padded
-      xm -= this.layout.pad.left;
-      ym -= this.layout.pad.top;
+      let [xm, ym] = d3.pointer(evt, this.gInner.node());
+
+      // TODO Points could be memoized based on hidden z items
       const points = d3.map(this.data, (d) => {
         if (this.hidden.has(d.z)) return null;
         return Math.hypot(this.x(d.x) - xm, this.y(d.y) - ym);
@@ -426,6 +438,7 @@ export class LineChart extends CategoricalChart {
       const d = this.data[index];
 
       // Data that will be provided to the callback
+      // TODO Provide both offset and page coordinates?
       const data = {
         x: d.x,
         y: d.y,

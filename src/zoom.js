@@ -7,10 +7,11 @@ import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
 import { className } from "./text";
-import { maxLabelSize } from "./ticks";
 import { throttle } from "./throttle";
+import { maxLabelSize } from "./ticks";
+import { placeTooltip } from "./tooltip";
 
-export { parse3dArray, parseTimeSeries3dArray };
+export { parse3dArray, parseTimeSeries3dArray, placeTooltip };
 
 export class LineChartWithZoom extends CategoricalChart {
   xFormat = null;
@@ -22,7 +23,7 @@ export class LineChartWithZoom extends CategoricalChart {
     super(data, parser);
     // Default config
     this.config = {
-      SCREEN_HEIGHT_PERCENT: 0.5,
+      LAYOUT: {},
       DURATION_MS: 500,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       HIGHLIGHT_STROKE_WIDTH: 2.0, // Width when highlighted
@@ -159,7 +160,7 @@ export class LineChartWithZoom extends CategoricalChart {
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config);
+    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
 
     // Create fake axes to measure label sizes and update layout
     this.updateLayout();
@@ -200,7 +201,7 @@ export class LineChartWithZoom extends CategoricalChart {
         `translate(${this.layout.pad.left},${this.layout.pad.top})`,
       );
 
-    const gInner = this.svg
+    this.gInner = this.svg
       .append("g")
       .attr("class", "inner")
       .attr(
@@ -211,7 +212,7 @@ export class LineChartWithZoom extends CategoricalChart {
 
     const grouping = d3.group(this.data, (d) => d.z);
 
-    this.paths = gInner
+    this.paths = this.gInner
       .append("g")
       .attr("fill", "none")
       .attr("stroke-width", this.config.STROKE_WIDTH)
@@ -231,7 +232,10 @@ export class LineChartWithZoom extends CategoricalChart {
       .on("zoom", zoomed.bind(this));
 
     // Dot - shows nearest point during pointer events
-    this.dot = gInner.append("g").attr("class", "dot").style("display", "none");
+    this.dot = this.gInner
+      .append("g")
+      .attr("class", "dot")
+      .style("display", "none");
     this.circle = this.dot.append("circle").attr("r", this.config.DOT_RADIUS);
 
     this.reset();
@@ -320,7 +324,9 @@ export class LineChartWithZoom extends CategoricalChart {
 
     // Determine the closest point to the cursor
     const pointermove = (evt) => {
-      const [xm, ym] = d3.pointer(evt);
+      const [xm, ym] = d3.pointer(evt, this.gInner.node());
+
+      // TODO Points could be memoized based on hidden z items
       const points = d3.map(this.data, (d) => {
         if (this.hidden.has(d.z)) return null;
         return Math.hypot(this.x(d.x) - xm, this.y(d.y) - ym);
@@ -343,8 +349,8 @@ export class LineChartWithZoom extends CategoricalChart {
         x: d.x,
         y: d.y,
         z: d.z,
-        dx: this.x(d.x),
-        dy: this.y(d.y),
+        dx: this.x(d.x) + this.layout.pad.left,
+        dy: this.y(d.y) + this.layout.pad.top,
       };
 
       if (move) {

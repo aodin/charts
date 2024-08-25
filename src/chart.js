@@ -4,14 +4,42 @@ import { quantizeScheme } from "./colors";
 
 export class Chart {
   // Base class for charts
-  // Currently only has some common chained config methods
+  // Currently only has some common chained config methods for layout and animation
 
   constructor(data, parser = (d) => d) {}
 
   /* Config chained methods */
   screenHeightPercent(value) {
-    this.config.SCREEN_HEIGHT_PERCENT = value;
+    this.config.LAYOUT.screenHeightPercent = value;
     return this;
+  }
+
+  minHeight(value) {
+    this.config.LAYOUT.minHeight = value;
+    return this;
+  }
+
+  maxHeight(value) {
+    this.config.LAYOUT.maxHeight = value;
+    return this;
+  }
+
+  height(value) {
+    return this.minHeight(value).maxHeight(value);
+  }
+
+  minWidth(value) {
+    this.config.LAYOUT.minWidth = value;
+    return this;
+  }
+
+  maxWidth(value) {
+    this.config.LAYOUT.maxWidth = value;
+    return this;
+  }
+
+  width(value) {
+    return this.minWidth(value).maxWidth(value);
   }
 
   animationDuration(value) {

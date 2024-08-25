@@ -45,5 +45,19 @@ An optional offset can be provided, which will skip the ticks with a lower index
 export function filterTicks(ticks, layout, labelWidth, offset = 0) {
   const count = parseInt(layout.innerWidth / (labelWidth + 1)) + 1;
   const interval = d3.max([parseInt(Math.ceil(ticks.length / count)), 1]);
-  return d3.filter(ticks, (d, i) => i >= offset && i % interval === 0);
+  return d3.filter(
+    ticks,
+    (d, i) => i - offset >= 0 && (i - offset) % interval === 0,
+  );
+}
+
+// Another variant of filterTicks that automatically determines an offset
+export function filterTicksAutoOffset(ticks, layout, labelWidth) {
+  const count = parseInt(layout.innerWidth / (labelWidth + 1)) + 1;
+  const interval = d3.max([parseInt(Math.ceil(ticks.length / count)), 1]);
+  const offset = interval > 1 ? Math.floor(interval / 2) : 0;
+  return d3.filter(
+    ticks,
+    (d, i) => i - offset >= 0 && (i - offset) % interval === 0,
+  );
 }

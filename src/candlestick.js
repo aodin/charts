@@ -5,8 +5,9 @@ import { volume } from "./formats";
 import { layoutSVG } from "./layout";
 import { parseArrayOHLCV, parseVerboseOHLCV } from "./parsers";
 import { throttle } from "./throttle";
-import { maxLabelSize, filterTicks } from "./ticks";
+import { maxLabelSize, filterTicksAutoOffset } from "./ticks";
 import { makeDateFormatter } from "./timeseries";
+import { placeTooltip } from "./tooltip";
 
 export { parseArrayOHLCV, parseVerboseOHLCV };
 
@@ -64,7 +65,6 @@ export class CandlestickChart extends Chart {
     this.config = {
       VOLUME_RATIO: 0.0,
       LOG_Y: false, // We need to know which scale is used for proper tick formats
-      SCREEN_HEIGHT_PERCENT: 0.5,
       BAND_PAD: 0.1,
       DURATION_MS: 500,
       PRICE_AXIS_RIGHT: false,
@@ -72,6 +72,7 @@ export class CandlestickChart extends Chart {
       HIDE_VOLUME_AXIS: false,
       VOLUME_TICK_COUNT: 1,
       RESCALE_Y: true,
+      LAYOUT: {},
 
       // Additional layout padding
       // TODO Specify an additional layout?
@@ -185,6 +186,14 @@ export class CandlestickChart extends Chart {
     return makeDateFormatter();
   }
 
+  get xValues() {
+    return filterTicksAutoOffset(
+      this.X.slice(this.start, this.end + 1),
+      this.layout,
+      this.labelWidthX,
+    );
+  }
+
   render(selector) {
     // If there is no data, do not render
     if (!this.data.length) return;
@@ -192,7 +201,7 @@ export class CandlestickChart extends Chart {
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config);
+    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
 
     // The price and volume portions of the chart will share an x-axis
     const volumeHeight = this.layout.innerHeight * this.config.VOLUME_RATIO;
@@ -299,7 +308,6 @@ export class CandlestickChart extends Chart {
       "x axis",
     );
     this.labelWidthX = labelWidthX + this.config.MARGIN_LABEL;
-    const filteredX = filterTicks(this.X, this.layout, this.labelWidthX);
 
     // Reset the date formatter
     dates = this.makeDateFormatter();
@@ -310,7 +318,7 @@ export class CandlestickChart extends Chart {
 
     this.axisX = d3
       .axisBottom(this.scaleX)
-      .tickValues(filteredX)
+      .tickValues(this.xValues)
       .tickFormat(dates)
       .tickSize(3);
 
@@ -332,15 +340,6 @@ export class CandlestickChart extends Chart {
       .call(axisY.tickSize(this.gridWidth));
 
     const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
-
-    this.gx = this.inner
-      .append("g")
-      .attr("class", "x axis")
-      .attr(
-        "transform",
-        `translate(${bandPad + 0.5},${this.layout.innerHeight + this.config.MARGIN_TICK})`,
-      )
-      .call(this.axisX);
 
     this.price = this.inner.append("g").attr("class", "price");
 
@@ -417,6 +416,16 @@ export class CandlestickChart extends Chart {
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("class", deltaClass);
 
+    // Elements drawn last will appear on top
+    this.gx = this.inner
+      .append("g")
+      .attr("class", "x axis")
+      .attr(
+        "transform",
+        `translate(${bandPad + 0.5},${this.layout.innerHeight})`,
+      )
+      .call(this.axisX);
+
     // Brush for zoom
     this.brush = d3
       .brushX()
@@ -468,19 +477,9 @@ export class CandlestickChart extends Chart {
     this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
     const axisY = this.priceAxisIndex;
 
-    // Re-filter the X-axis date labels
-    // TODO Since we know the labelWidthX, we can determine automatically based on the
-    // left padding if the x ticks should start on a non-zero bar
-    // console.log(this.labelWidthX, this.layout.pad.left, this.scaleX.bandwidth())
-    const filteredX = filterTicks(
-      this.X.slice(this.start, this.end + 1),
-      this.layout,
-      this.labelWidthX,
-    );
-
-    // Reset the date formatter
+    // Reset the date formatter and re-filter the X-axis date labels
     const dates = this.makeDateFormatter();
-    this.axisX.tickValues(filteredX).tickFormat(dates);
+    this.axisX.tickValues(this.xValues).tickFormat(dates);
 
     // Update the x-axis
     const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
@@ -489,7 +488,7 @@ export class CandlestickChart extends Chart {
       .duration(this.config.DURATION_MS)
       .attr(
         "transform",
-        `translate(${bandPad + 0.5},${this.layout.innerHeight + this.config.MARGIN_TICK})`,
+        `translate(${bandPad + 0.5},${this.layout.innerHeight})`,
       )
       .call(this.axisX);
 

@@ -22,6 +22,8 @@ export const magnitude = new Intl.NumberFormat("en-US", {
 
 export const units = d3.format(",.0f");
 
+export const price = d3.format(",.2f");
+
 export const volume = function (value) {
   if (!value) return; // Never show 0
   if (value >= 1e9) return `${value / 1e9}B`; // Billions
