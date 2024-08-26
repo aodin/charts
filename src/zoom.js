@@ -9,9 +9,9 @@ import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
 import { className } from "./text";
 import { throttle } from "./throttle";
 import { maxLabelSize } from "./ticks";
-import { placeTooltip } from "./tooltip";
+import { placeTooltip, placeTooltipTop } from "./tooltip";
 
-export { parse3dArray, parseTimeSeries3dArray, placeTooltip };
+export { parse3dArray, parseTimeSeries3dArray, placeTooltip, placeTooltipTop };
 
 export class LineChartWithZoom extends CategoricalChart {
   xFormat = null;

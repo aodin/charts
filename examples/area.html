@@ -184,7 +184,6 @@ const rect = document.getElementById("chart");
 
 function onMove(d) {
   // area.highlight(d.key);
-  console.log("MOVE")
   tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${d.y}`);
   let [tx, ty, align] = charts.placeTooltip(rect, bbox, d.dx, d.dy);
 

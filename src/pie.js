@@ -6,9 +6,15 @@ import * as d3 from "d3";
 import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray, parseArrayYZ } from "./parsers";
-import { placeTooltip } from "./tooltip";
+import { placeTooltip, placeTooltipTop } from "./tooltip";
 
-export { parse3dArray, parseTimeSeries3dArray, parseArrayYZ, placeTooltip };
+export {
+  parse3dArray,
+  parseTimeSeries3dArray,
+  parseArrayYZ,
+  placeTooltip,
+  placeTooltipTop,
+};
 
 export class PieChart extends CategoricalChart {
   // Pie charts expect data is the format [{x, y, z}...]

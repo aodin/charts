@@ -7,9 +7,9 @@ import { parseArrayOHLCV, parseVerboseOHLCV } from "./parsers";
 import { throttle } from "./throttle";
 import { maxLabelSize, filterTicksAutoOffset } from "./ticks";
 import { makeDateFormatter } from "./timeseries";
-import { placeTooltip } from "./tooltip";
+import { placeTooltip, placeTooltipTop } from "./tooltip";
 
-export { parseArrayOHLCV, parseVerboseOHLCV };
+export { parseArrayOHLCV, parseVerboseOHLCV, placeTooltip, placeTooltipTop };
 
 function signOf(d) {
   // TODO Assumes both open and close are defined

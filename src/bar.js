@@ -10,9 +10,9 @@ import { className } from "./text";
 import { throttle } from "./throttle";
 import { maxLabelSize, filterTicksAutoOffset } from "./ticks";
 import { makeDateFormatter } from "./timeseries";
-import { placeTooltip } from "./tooltip";
+import { placeTooltip, placeTooltipTop } from "./tooltip";
 
-export { parse3dArray, parseTimeSeries3dArray, placeTooltip };
+export { parse3dArray, parseTimeSeries3dArray, placeTooltip, placeTooltipTop };
 
 function consistentOrderDiverging(fullStack) {
   // NOTE getStack() reverses the stack
