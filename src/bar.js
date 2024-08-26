@@ -60,6 +60,7 @@ export class BarChart extends CategoricalChart {
       BAND_PAD: 0.2,
       BAR_STROKE_WIDTH: 1.0,
       DURATION_MS: 500,
+      DELAY_MS: 0,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       Y_AXIS_RIGHT: false,
       COLORS: d3.schemeCategory10,
@@ -108,6 +109,20 @@ export class BarChart extends CategoricalChart {
 
   noBarOutline() {
     return this.barOutline(0.0);
+  }
+
+  staggerAnimation(value = 0) {
+    // If not value is provided, stagger by a fraction of the total animation
+    if (!value) {
+      value = this.config.DURATION_MS / (this.Z.length * 2);
+    }
+    this.config.DELAY_MS = value;
+    return this;
+  }
+
+  noStaggerAnimation() {
+    this.config.DELAY_MS = 0;
+    return this;
   }
   /* End config chained methods */
 
@@ -357,6 +372,7 @@ export class BarChart extends CategoricalChart {
     this.bars
       .data((D) => D)
       .transition()
+      .delay((d, i) => i * this.config.DELAY_MS)
       .duration(this.config.DURATION_MS)
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
       .attr("x", (d, i) => this.x(d.data[0]))
