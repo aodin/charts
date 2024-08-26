@@ -180,8 +180,26 @@ export class LineChartWithZoom extends CategoricalChart {
       .append("clipPath")
       .attr("id", clipPathID)
       .append("rect")
-      .attr("width", this.layout.innerWidth)
-      .attr("height", this.layout.innerHeight);
+      .attr("width", this.layout.width)
+      .attr("height", this.layout.height);
+
+    this.svg.attr("clip-path", `url(#${clipPathID})`);
+
+    this.gGrid = this.svg
+      .append("g")
+      .attr("class", "grid")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
+      );
+
+    this.gInner = this.svg
+      .append("g")
+      .attr("class", "inner")
+      .attr(
+        "transform",
+        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
+      );
 
     this.gx = this.svg
       .append("g")
@@ -198,23 +216,6 @@ export class LineChartWithZoom extends CategoricalChart {
         "transform",
         `translate(${this.layout.pad.left},${this.layout.pad.top})`,
       );
-
-    this.gGrid = this.svg
-      .append("g")
-      .attr("class", "grid")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left},${this.layout.pad.top})`,
-      );
-
-    this.gInner = this.svg
-      .append("g")
-      .attr("class", "inner")
-      .attr(
-        "transform",
-        `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
-      )
-      .attr("clip-path", `url(#${clipPathID})`);
 
     const grouping = d3.group(this.data, (d) => d.z);
 
