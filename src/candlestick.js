@@ -197,6 +197,8 @@ export class CandlestickChart extends Chart {
     );
   }
 
+  updateLayout() {}
+
   render(selector) {
     // If there is no data, do not render
     if (!this.data.length) return;
@@ -244,6 +246,7 @@ export class CandlestickChart extends Chart {
       .domain(domainY)
       .range(rangeY)
       .clamp(true);
+
     this.scaleLog = d3.scaleLog().domain(domainY).range(rangeY).clamp(true);
 
     // Get the max tick label width for the y-axis on both linear and log scales
@@ -315,6 +318,11 @@ export class CandlestickChart extends Chart {
     );
     this.labelWidthX = labelWidthX + this.config.MARGIN_LABEL;
 
+    let yTransform = "transform(0,0)";
+    if (this.config.PRICE_AXIS_RIGHT) {
+      yTransform = `translate(${this.layout.innerWidth + this.config.MARGIN_AXES},0)`;
+    }
+
     // Reset the date formatter
     dates = this.makeDateFormatter();
 
@@ -322,16 +330,17 @@ export class CandlestickChart extends Chart {
     this.scaleY = this.config.LOG_Y ? this.scaleLog : this.scaleLinear;
     const axisY = this.priceAxisIndex;
 
+    this.grid = this.inner
+      .append("g")
+      .attr("transform", yTransform)
+      .attr("class", "grid")
+      .call(axisY.tickSize(this.gridWidth));
+
     this.axisX = d3
       .axisBottom(this.scaleX)
       .tickValues(this.xValues)
       .tickFormat(dates)
       .tickSize(3);
-
-    let yTransform = "transform(0,0)";
-    if (this.config.PRICE_AXIS_RIGHT) {
-      yTransform = `translate(${this.layout.innerWidth + this.config.MARGIN_AXES},0)`;
-    }
 
     this.gPrice = this.inner
       .append("g")
@@ -339,43 +348,7 @@ export class CandlestickChart extends Chart {
       .attr("class", "y axis")
       .call(axisY.tickSize(0));
 
-    this.grid = this.inner
-      .append("g")
-      .attr("transform", yTransform)
-      .attr("class", "grid")
-      .call(axisY.tickSize(this.gridWidth));
-
     const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
-
-    this.price = this.inner.append("g").attr("class", "price");
-
-    this.candles = this.price
-      .append("g")
-      .attr("clip-path", `url(#${clipPathID})`)
-      .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
-      .attr("stroke", "currentColor")
-      .selectAll("g")
-      .data(this.data)
-      .join("g")
-      .attr("class", deltaClass)
-      .attr(
-        "transform",
-        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
-      );
-
-    this.wicks = this.candles
-      .append("line")
-      .attr("stroke-width", this.wickThickness)
-      .attr("class", "wick")
-      .attr("y1", this.scaleY(minY))
-      .attr("y2", this.scaleY(minY));
-
-    this.bars = this.candles
-      .append("line")
-      .attr("stroke-width", this.scaleX.bandwidth())
-      .attr("class", "bar")
-      .attr("y1", this.scaleY(minY))
-      .attr("y2", this.scaleY(minY));
 
     // Volume elements are always rendered even if their height is zero
     this.axisVolume = d3
@@ -421,6 +394,36 @@ export class CandlestickChart extends Chart {
       .attr("y2", this.scaleVolume(0))
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("class", deltaClass);
+
+    this.price = this.inner.append("g").attr("class", "price");
+
+    this.candles = this.price
+      .append("g")
+      .attr("clip-path", `url(#${clipPathID})`)
+      .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
+      .attr("stroke", "currentColor")
+      .selectAll("g")
+      .data(this.data)
+      .join("g")
+      .attr("class", deltaClass)
+      .attr(
+        "transform",
+        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+      );
+
+    this.wicks = this.candles
+      .append("line")
+      .attr("stroke-width", this.wickThickness)
+      .attr("class", "wick")
+      .attr("y1", this.scaleY(minY))
+      .attr("y2", this.scaleY(minY));
+
+    this.bars = this.candles
+      .append("line")
+      .attr("stroke-width", this.scaleX.bandwidth())
+      .attr("class", "bar")
+      .attr("y1", this.scaleY(minY))
+      .attr("y2", this.scaleY(minY));
 
     // Elements drawn last will appear on top
     this.gx = this.inner
