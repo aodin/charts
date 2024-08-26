@@ -11,6 +11,9 @@ import { placeTooltip, placeTooltipTop } from "./tooltip";
 
 export { parseArrayOHLCV, parseVerboseOHLCV, placeTooltip, placeTooltipTop };
 
+// Clip paths require a unique ID
+let uniqueID = 0;
+
 function signOf(d) {
   // TODO Assumes both open and close are defined
   return 1 + Math.sign(d.o - d.c);
@@ -198,6 +201,9 @@ export class CandlestickChart extends Chart {
     // If there is no data, do not render
     if (!this.data.length) return;
 
+    // Set a new clip path ID whenever the chart is rendered
+    const clipPathID = `candlestick-clip-path-${uniqueID++}`;
+
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
@@ -276,7 +282,7 @@ export class CandlestickChart extends Chart {
     this.svg
       .append("defs")
       .append("clipPath")
-      .attr("id", "inner-clip-path")
+      .attr("id", clipPathID)
       .append("rect")
       .attr("width", this.layout.innerWidth)
       .attr("height", this.layout.innerHeight);
@@ -345,7 +351,7 @@ export class CandlestickChart extends Chart {
 
     this.candles = this.price
       .append("g")
-      .attr("clip-path", "url(#inner-clip-path)")
+      .attr("clip-path", `url(#${clipPathID})`)
       .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
       .attr("stroke", "currentColor")
       .selectAll("g")
@@ -398,7 +404,7 @@ export class CandlestickChart extends Chart {
 
     this.volumeSlots = this.volume
       .append("g")
-      .attr("clip-path", "url(#inner-clip-path)")
+      .attr("clip-path", `url(#${clipPathID})`)
       .attr("stroke", "currentColor")
       .attr("stroke-linecap", "butt") // NOTE using 'square' distorts size
       .selectAll("g")

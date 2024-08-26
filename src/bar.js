@@ -14,6 +14,9 @@ import { placeTooltip, placeTooltipTop } from "./tooltip";
 
 export { parse3dArray, parseTimeSeries3dArray, placeTooltip, placeTooltipTop };
 
+// Clip paths require a unique ID
+let uniqueID = 0;
+
 function consistentOrderDiverging(fullStack) {
   // NOTE getStack() reverses the stack
   let stack = fullStack.slice().reverse();
@@ -254,6 +257,9 @@ export class BarChart extends CategoricalChart {
     // If there is no data, do not render
     if (!this.data.length) return;
 
+    // Set a new clip path ID whenever the chart is rendered
+    const clipPathID = `bar-clip-path-${uniqueID++}`;
+
     // Calculate the full stack and cache it
     this._fullStack = this.getStack(this.data);
     this.config.STACK_OFFSET = consistentOrderDiverging(this._fullStack);
@@ -276,12 +282,12 @@ export class BarChart extends CategoricalChart {
     this.svg
       .append("defs")
       .append("clipPath")
-      .attr("id", "inner-clip-path")
+      .attr("id", clipPathID)
       .append("rect")
       .attr("width", this.layout.width)
       .attr("height", this.layout.height);
 
-    this.svg.attr("clip-path", "url(#inner-clip-path)");
+    this.svg.attr("clip-path", `url(#${clipPathID})`);
 
     // First items drawn are lower layers
     this.gGrid = this.svg

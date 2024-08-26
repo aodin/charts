@@ -13,6 +13,9 @@ import { placeTooltip, placeTooltipTop } from "./tooltip";
 
 export { parse3dArray, parseTimeSeries3dArray, placeTooltip, placeTooltipTop };
 
+// Clip paths require a unique ID
+let uniqueID = 0;
+
 function getLength(elem) {
   // Not all DOMs support getTotalLength
   return elem.getTotalLength ? elem.getTotalLength() : null;
@@ -189,6 +192,9 @@ export class LineChart extends CategoricalChart {
     // If there is no data, do not render
     if (!this.data.length) return;
 
+    // Set a new clip path ID whenever the chart is rendered
+    const clipPathID = `line-clip-path-${uniqueID++}`;
+
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
@@ -207,12 +213,12 @@ export class LineChart extends CategoricalChart {
     this.svg
       .append("defs")
       .append("clipPath")
-      .attr("id", "inner-clip-path")
+      .attr("id", clipPathID)
       .append("rect")
       .attr("width", this.layout.width)
       .attr("height", this.layout.height);
 
-    this.svg.attr("clip-path", "url(#inner-clip-path)");
+    this.svg.attr("clip-path", `url(#${clipPathID})`);
 
     // First items drawn are lower layers
     this.gGrid = this.svg

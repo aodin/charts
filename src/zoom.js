@@ -13,6 +13,9 @@ import { placeTooltip, placeTooltipTop } from "./tooltip";
 
 export { parse3dArray, parseTimeSeries3dArray, placeTooltip, placeTooltipTop };
 
+// Clip paths require a unique ID
+let uniqueID = 0;
+
 export class LineChartWithZoom extends CategoricalChart {
   xFormat = null;
   yFormat = null;
@@ -157,6 +160,9 @@ export class LineChartWithZoom extends CategoricalChart {
     // If there is no data, do not render
     if (!this.data.length) return;
 
+    // Set a new clip path ID whenever the chart is rendered
+    const clipPathID = `zoom-clip-path-${uniqueID++}`;
+
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
@@ -172,7 +178,7 @@ export class LineChartWithZoom extends CategoricalChart {
     this.svg
       .append("defs")
       .append("clipPath")
-      .attr("id", "inner-clip-path")
+      .attr("id", clipPathID)
       .append("rect")
       .attr("width", this.layout.innerWidth)
       .attr("height", this.layout.innerHeight);
@@ -208,7 +214,7 @@ export class LineChartWithZoom extends CategoricalChart {
         "transform",
         `translate(${this.layout.pad.left}, ${this.layout.pad.top})`,
       )
-      .attr("clip-path", "url(#inner-clip-path)");
+      .attr("clip-path", `url(#${clipPathID})`);
 
     const grouping = d3.group(this.data, (d) => d.z);
 
