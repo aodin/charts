@@ -18,13 +18,5 @@ export function placeTooltip(container, tooltip, dx, dy, padding = 5) {
     y = padding;
   }
 
-  console.log(
-    "D",
-    dx,
-    dy,
-    "T",
-    x + container.offsetLeft + dx,
-    y + container.offsetTop + dy,
-  );
   return [x + container.offsetLeft + dx, y + container.offsetTop + dy, align];
 }
