@@ -233,7 +233,7 @@ export class AreaChart extends CategoricalChart {
         `translate(${this.layout.pad.left},${this.layout.pad.top})`,
       );
 
-    const gInner = this.svg
+    this.gInner = this.svg
       .append("g")
       .attr("class", "inner")
       .attr(
@@ -271,7 +271,7 @@ export class AreaChart extends CategoricalChart {
       .y0((d) => this.y(0))
       .y1((d) => this.y(0));
 
-    this.areas = gInner
+    this.areas = this.gInner
       .append("g")
       .selectAll()
       .data(this.stack)
@@ -322,7 +322,7 @@ export class AreaChart extends CategoricalChart {
     );
 
     const pointermove = (evt, d) => {
-      let [xm, ym] = d3.pointer(evt, this.gInner);
+      let [xm, ym] = d3.pointer(evt, this.gInner.node());
       const index = d3.bisectCenter(coords, xm);
       const point = indexed.get(d.key).get(xs[index]);
 
@@ -418,6 +418,11 @@ export class TimeSeriesSharesChart extends TimeSeriesAreaChart {
 
     // Largest items are returned first, since the stack areas are all drawn from zero
     return stack.reverse();
+  }
+
+  get yDomain() {
+    // Share charts will always be 0 to 1.0
+    return [0.0, 1.0];
   }
 }
 
