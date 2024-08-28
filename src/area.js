@@ -322,6 +322,11 @@ export class AreaChart extends CategoricalChart {
     );
 
     const pointermove = (evt, d) => {
+      if (evt.touches) {
+        // Prevent scroll on touch devices
+        evt.preventDefault();
+        evt = evt.touches[0];
+      }
       let [xm, ym] = d3.pointer(evt, this.gInner.node());
       const index = d3.bisectCenter(coords, xm);
       const point = indexed.get(d.key).get(xs[index]);
@@ -341,13 +346,17 @@ export class AreaChart extends CategoricalChart {
 
     const pointerleave = (evt, d) => {
       if (leave) {
-        leave.call(this, d.key);
+        leave.call(this, d.key, evt);
       }
     };
 
+    // Separate mouse and touch events
     this.areas
       .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
-      .on("pointerleave", pointerleave);
+      .on("pointerleave", pointerleave)
+      .on("touchstart", pointermove, { passive: false })
+      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchend", pointerleave, { passive: false });
   }
 
   toggle() {

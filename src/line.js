@@ -421,6 +421,12 @@ export class LineChart extends CategoricalChart {
 
     // Determine the closest point to the cursor
     const pointermove = (evt) => {
+      if (evt.touches) {
+        // Prevent scroll on touch devices
+        evt.preventDefault();
+        evt = evt.touches[0];
+      }
+
       // X and y scales use the inner element, which is padded
       let [xm, ym] = d3.pointer(evt, this.gInner.node());
 
@@ -465,13 +471,13 @@ export class LineChart extends CategoricalChart {
       }
     };
 
+    // Separate mouse and touch events
     this.svg
-      .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
-      .on("pointerleave", pointerleave)
-      .on("touchstart", (evt) => {
-        pointermove(evt);
-        evt.preventDefault();
-      });
+      .on("mousemove", throttle(pointermove, 20.83)) // 48 fps
+      .on("mouseleave", pointerleave)
+      .on("touchstart", pointermove, { passive: false })
+      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchend", pointerleave, { passive: false });
   }
 
   toggle() {

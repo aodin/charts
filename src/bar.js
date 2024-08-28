@@ -397,6 +397,11 @@ export class BarChart extends CategoricalChart {
 
   onEvent(move, leave) {
     const pointermove = (evt, d) => {
+      if (evt.touches) {
+        // Prevent scroll on touch devices
+        evt.preventDefault();
+        evt = evt.touches[0];
+      }
       let [xm, ym] = d3.pointer(evt, this.svg.node());
 
       // TODO Is this really the best way to get the data?
@@ -419,13 +424,17 @@ export class BarChart extends CategoricalChart {
 
     const pointerleave = (evt, d) => {
       if (leave) {
-        leave.call(this, d.key);
+        leave.call(this, d.key, evt);
       }
     };
 
+    // Separate mouse and touch events
     this.bars
-      .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
-      .on("pointerleave", pointerleave);
+      .on("mousemove", throttle(pointermove, 20.83)) // 48 fps
+      .on("mouseleave", pointerleave)
+      .on("touchstart", pointermove, { passive: false })
+      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchend", pointerleave, { passive: false });
   }
 
   toggle() {
