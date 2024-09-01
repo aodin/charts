@@ -61,6 +61,7 @@ export class BarChart extends CategoricalChart {
       BAR_STROKE_WIDTH: 1.0,
       DURATION_MS: 500,
       DELAY_MS: 0,
+      DELAY_ONCE: false,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       Y_AXIS_RIGHT: false,
       COLORS: d3.schemeCategory10,
@@ -72,6 +73,7 @@ export class BarChart extends CategoricalChart {
       MARGIN_TICK: 3,
     };
 
+    this.opened = false; // Is set true after the initial animation
     this.data = this.parseData(data, parser);
     this.items = this.parseItems(data);
     this.Z = this.parseZ(data);
@@ -111,10 +113,16 @@ export class BarChart extends CategoricalChart {
     return this.barOutline(0.0);
   }
 
+  staggerOpening(value = 0) {
+    // Stagger only the opening animation
+    this.config.DELAY_ONCE = true;
+    return this.staggerAnimation(value);
+  }
+
   staggerAnimation(value = 0) {
     // If not value is provided, stagger by a fraction of the total animation
     if (!value) {
-      value = this.config.DURATION_MS / (this.Z.length * 2);
+      value = this.config.DURATION_MS / (this.xDomain.length + 1);
     }
     this.config.DELAY_MS = value;
     return this;
@@ -125,6 +133,13 @@ export class BarChart extends CategoricalChart {
     return this;
   }
   /* End config chained methods */
+
+  delay(d, i) {
+    if (this.config.DELAY_ONCE && this.opened) {
+      return 0;
+    }
+    return i * this.config.DELAY_MS;
+  }
 
   getStack(data) {
     // Index the data by x, then by z for each x
@@ -221,7 +236,11 @@ export class BarChart extends CategoricalChart {
 
   grid(g, x, y) {
     // Separating the grid from the axes allows more control of its positioning
-    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
+    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""))
+      .selectAll(".tick")
+      .each(function (d) {
+        d3.select(this).classed("zero", d === 0);
+      });
   }
 
   groupClass(d, i) {
@@ -372,7 +391,7 @@ export class BarChart extends CategoricalChart {
     this.bars
       .data((D) => D)
       .transition()
-      .delay((d, i) => i * this.config.DELAY_MS)
+      .delay(this.delay.bind(this))
       .duration(this.config.DURATION_MS)
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
       .attr("x", (d, i) => this.x(d.data[0]))
@@ -383,6 +402,7 @@ export class BarChart extends CategoricalChart {
         }
         return this.y(d[1]) - this.y(d[0]);
       });
+    this.opened = true;
   }
 
   noHighlight() {
@@ -402,20 +422,27 @@ export class BarChart extends CategoricalChart {
         evt.preventDefault();
         evt = evt.touches[0];
       }
-      let [xm, ym] = d3.pointer(evt, this.svg.node());
 
       // TODO Is this really the best way to get the data?
       const x = d.data[0];
       const y = d[0] < 0 ? d[0] - d[1] : d[1] - d[0];
       const z = d3.select(evt.srcElement.parentNode).data()[0].key;
 
-      // Data the will provided to the callback
+      // Data that will be provided to the callback: include both the coordinates
+      // of the bar and the pointer, both in relation to the page
+      // TODO Why doesn't pageXY work with the rectangle?
+      const rect = evt.target.getBoundingClientRect();
+      const [px, py] = d3.pointer(evt, null);
       const data = {
         x: x,
         y: y,
         z: z,
-        dx: xm,
-        dy: ym,
+        // Bar page coordinates
+        dx: rect.x + window.scrollX,
+        dy: rect.y + window.scrollY,
+        // Pointer page coordinates
+        px: px,
+        py: py,
       };
       if (move) {
         move.call(this, data, evt);

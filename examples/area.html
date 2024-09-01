@@ -177,15 +177,12 @@ const tooltip = d3
   .style("visibility", "hidden");
 
 const monthYear = d3.utcFormat("%b %Y");
-
-// TODO How to get tooltip dimensions directly?
-const bbox = document.getElementById("chart-tooltip");
-const rect = document.getElementById("chart");
+const container = document.getElementById("chart");
 
 function onMove(d) {
   // area.highlight(d.key);
   tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${d.y}`);
-  let [tx, ty, align] = charts.placeTooltip(rect, bbox, d.dx, d.dy);
+  let [tx, ty, align] = charts.placeTooltip(container, tooltip.node(), d.px, d.py);
 
   tooltip
     .style("visibility", null)

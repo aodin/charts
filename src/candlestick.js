@@ -70,6 +70,8 @@ export class CandlestickChart extends Chart {
       LOG_Y: false, // We need to know which scale is used for proper tick formats
       BAND_PAD: 0.1,
       DURATION_MS: 500,
+      DELAY_MS: 0,
+      DELAY_ONCE: false,
       PRICE_AXIS_RIGHT: false,
       VOLUME_AXIS_RIGHT: true,
       HIDE_VOLUME_AXIS: false,
@@ -86,8 +88,9 @@ export class CandlestickChart extends Chart {
       MARGIN_TICK: 2,
     };
 
+    this.opened = false; // Is set true after the initial animation
+
     // Get data in a {x, o, h, l, c, v} format
-    // TODO Warn if data wasn't parsed correctly
     this.data = d3.map(data, parser);
 
     // Also save the X axis, since it is used for filtering tick labels
@@ -149,7 +152,34 @@ export class CandlestickChart extends Chart {
     this.config.LOG_Y = false;
     return this;
   }
+
+  staggerOpening(value = 0) {
+    // Stagger only the opening animation
+    this.config.DELAY_ONCE = true;
+    return this.staggerAnimation(value);
+  }
+
+  staggerAnimation(value = 0) {
+    // If not value is provided, stagger by a fraction of the total animation
+    if (!value) {
+      value = this.config.DURATION_MS / (this.X.length + 1);
+    }
+    this.config.DELAY_MS = value;
+    return this;
+  }
+
+  noStaggerAnimation() {
+    this.config.DELAY_MS = 0;
+    return this;
+  }
   /* End config chained methods */
+
+  delay(d, i) {
+    if (this.config.DELAY_ONCE && this.opened) {
+      return 0;
+    }
+    return i * this.config.DELAY_MS;
+  }
 
   get volumeAxesIsVisible() {
     return Boolean(this.config.VOLUME_RATIO) && !this.config.HIDE_VOLUME_AXIS;
@@ -524,6 +554,7 @@ export class CandlestickChart extends Chart {
 
     this.bars
       .transition()
+      .delay(this.delay.bind(this))
       .duration(this.config.DURATION_MS)
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("y1", (d) => this.scaleY(d.o))
@@ -531,6 +562,7 @@ export class CandlestickChart extends Chart {
 
     this.wicks
       .transition()
+      .delay(this.delay.bind(this))
       .duration(this.config.DURATION_MS)
       .attr("stroke-width", this.wickThickness)
       .attr("y1", (d) => this.scaleY(d.l))
@@ -556,9 +588,12 @@ export class CandlestickChart extends Chart {
 
     this.volumeBars
       .transition()
+      .delay(this.delay.bind(this))
       .duration(this.config.DURATION_MS)
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("y2", (d) => this.scaleVolume(d.v || 0));
+
+    this.opened = true;
   }
 
   zoom({ selection }) {
@@ -613,19 +648,26 @@ export class CandlestickChart extends Chart {
     let prevIndex = null;
 
     const pointermove = (evt) => {
+      if (evt.touches) {
+        // Prevent scroll on touch devices
+        evt.preventDefault();
+        evt = evt.touches[0];
+      }
       const [xm] = d3.pointer(evt);
       const index = invertBand(this.scaleX, xm - this.layout.pad.left);
 
-      // Only trigger the callback when the index changes
-      if (prevIndex && prevIndex == index) {
-        return;
-      }
+      // TODO To only trigger the callback when the index changes
+      // if (prevIndex && prevIndex == index) {
+      //   return;
+      // }
 
       prevIndex = index;
 
       // Include the index's OHLCV data and a change from the last close
       let data = structuredClone(this.data[index]);
       data.index = index;
+
+      [data.px, data.py] = d3.pointer(evt, null);
 
       if (index > 0) {
         const prev = this.data[index - 1];
@@ -649,8 +691,11 @@ export class CandlestickChart extends Chart {
     };
 
     this.svg
-      .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
-      .on("pointerleave", pointerleave);
+      .on("mousemove", throttle(pointermove, 20.83)) // 48 fps
+      .on("mouseleave", pointerleave)
+      .on("touchstart", pointermove, { passive: false })
+      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchend", pointerleave, { passive: false });
   }
 
   // TODO method to append a data point

@@ -153,7 +153,11 @@ export class AreaChart extends CategoricalChart {
 
   grid(g, x, y) {
     // Separating the grid from the axes allows more control of its positioning
-    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
+    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""))
+      .selectAll(".tick")
+      .each(function (d) {
+        d3.select(this).classed("zero", d === 0);
+      });
   }
 
   updateLayout() {
@@ -331,13 +335,20 @@ export class AreaChart extends CategoricalChart {
       const index = d3.bisectCenter(coords, xm);
       const point = indexed.get(d.key).get(xs[index]);
 
-      // Data that will be provided to the callback
+      // Data that will be provided to the callback: include the page coordinates
+      // of the pointer
+      const [px, py] = d3.pointer(evt, null);
+
       const data = {
         x: point.x,
         y: point.y,
         z: point.z,
-        dx: xm + this.layout.pad.left,
-        dy: ym + this.layout.pad.top,
+        // NOTE: Since there's no relevant point for events, use the pointer
+        dx: px,
+        dy: py,
+        // Pointer page coordinates
+        px: px,
+        py: py,
       };
       if (move) {
         move.call(this, data, evt);
@@ -352,8 +363,8 @@ export class AreaChart extends CategoricalChart {
 
     // Separate mouse and touch events
     this.areas
-      .on("pointermove", throttle(pointermove, 20.83)) // 48 fps
-      .on("pointerleave", pointerleave)
+      .on("mousemove", throttle(pointermove, 20.83)) // 48 fps
+      .on("mouseleave", pointerleave)
       .on("touchstart", pointermove, { passive: false })
       .on("touchmove", throttle(pointermove, 20.83), { passive: false })
       .on("touchend", pointerleave, { passive: false });

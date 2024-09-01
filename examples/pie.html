@@ -47,16 +47,29 @@ const pie = charts.Donut(data, charts.parseTimeSeries3dArray)
   .useDiscreteScheme(d3.schemeTableau10);
 pie.render("#chart");
 
+const tooltip = d3
+  .select("body")
+  .append("div")
+  .style("pointer-events", "none")
+  .style("position", "absolute")
+  .style("visibility", "hidden")
+
 function onEnter(d, evt) {
-  pie.enlarge(d.data.z, true);
-  pie.highlight(d.data.z);
+  pie.enlarge(d.z, true);
+  pie.highlight(d.z);
 }
+
+function onMove(d, evt) {
+  const [tx, ty, align] = charts.placeTooltipTop(pie.svg.node(), tooltip.node(), d.px, d.py);
+  tooltip.style("left", `${tx}px`).style("top", `${ty}px`).style("visibility", null);
+}
+
 function onLeave(d, evt) {
+  tooltip.style("visibility", "hidden");
   pie.noHighlight();
   pie.reset();
 }
-pie.onEvent(onEnter, onLeave);
-
+pie.onEvent(onEnter, onMove, onLeave);
     </script>
   </body>
 </html>

@@ -145,7 +145,8 @@ zs.forEach((z, i) => {
 const bar = charts.TimeSeriesBar(data)
   .screenHeightPercent(0.75)
   .yAxisRight()
-  .staggerAnimation()
+  .staggerOpening()
+  // .staggerAnimation()
   // .barOutline(0.0)
   // .bandPadding(0.0)
   // .noAnimation()
@@ -198,8 +199,7 @@ function onMove(d) {
   // bar.highlight(d.key);
   // bar.highlight(d.z);
   tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${d.y}`);
-  const [tx, ty, align] = charts.placeTooltip(rect, bbox, d.dx, d.dy);
-  
+  const [tx, ty, align] = charts.placeTooltip(rect, bbox, d.px, d.py);
   tooltip
     .style("visibility", null)
     .style("text-align", align)

@@ -6,6 +6,7 @@ import * as d3 from "d3";
 import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray, parseArrayYZ } from "./parsers";
+import { throttle } from "./throttle";
 import { placeTooltip, placeTooltipTop } from "./tooltip";
 
 export {
@@ -248,23 +249,57 @@ export class PieChart extends CategoricalChart {
       );
   }
 
-  onEvent(enter, leave) {
+  onEvent(enter, move, leave) {
     const pointerenter = (evt, d) => {
       if (enter) {
-        enter.call(this, d, evt);
+        enter.call(this, d.data, evt);
+      }
+    };
+
+    const pointermove = (evt, d) => {
+      if (evt.touches) {
+        // Prevent scroll on touch devices
+        evt.preventDefault();
+        evt = evt.touches[0];
+      }
+
+      // TODO Why doesn't pageXY work with the rectangle?
+      const rect = evt.target.getBoundingClientRect();
+      const [px, py] = d3.pointer(evt, null);
+
+      // TODO Return the centroid?
+
+      const data = {
+        x: d.data.x,
+        y: d.data.y,
+        z: d.data.z,
+        // Slice page coordinates
+        dx: rect.x + window.scrollX,
+        dy: rect.y + window.scrollY,
+        // Pointer page coordinates
+        px: px,
+        py: py,
+      };
+
+      if (move) {
+        move.call(this, data, evt);
       }
     };
 
     const pointerleave = (evt, d) => {
       if (leave) {
-        leave.call(this, d, evt);
+        leave.call(this, d.data, evt);
       }
     };
 
     this.slices
       .selectAll("path")
-      .on("pointerenter", pointerenter)
-      .on("pointerleave", pointerleave);
+      .on("mouseenter", pointerenter)
+      .on("mousemove", throttle(pointermove, 20.83))
+      .on("mouseleave", pointerleave)
+      .on("touchstart", pointerenter, { passive: false })
+      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchend", pointerleave, { passive: false });
   }
 }
 

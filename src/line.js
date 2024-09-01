@@ -9,7 +9,7 @@ import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
 import { className } from "./text";
 import { throttle } from "./throttle";
 import { maxLabelSize } from "./ticks";
-import { placeTooltip, placeTooltipTop } from "./tooltip";
+import { placeTooltip, placeTooltipTop, pageXY } from "./tooltip";
 
 export { parse3dArray, parseTimeSeries3dArray, placeTooltip, placeTooltipTop };
 
@@ -149,7 +149,13 @@ export class LineChart extends CategoricalChart {
     // Separating the grid from the axes allows more control of its positioning
     // Another option for "zero state" is to set the tick size to zero
     // const tickSize = this.empty ? 0 : -this.layout.innerWidth;
-    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""));
+    g.call(d3.axisLeft(y).tickSize(-this.layout.innerWidth).tickFormat(""))
+      .selectAll(".tick")
+      .each(function (d) {
+        d3.select(this).classed("zero", d === 0);
+      });
+    // The following throws an error:
+    // .classed("zero", d => d === 0)
   }
 
   updateLayout() {
@@ -417,9 +423,8 @@ export class LineChart extends CategoricalChart {
   }
 
   onEvent(move, leave) {
-    let prevIndex = null;
+    // let prevIndex = null;
 
-    // Determine the closest point to the cursor
     const pointermove = (evt) => {
       if (evt.touches) {
         // Prevent scroll on touch devices
@@ -430,6 +435,7 @@ export class LineChart extends CategoricalChart {
       // X and y scales use the inner element, which is padded
       let [xm, ym] = d3.pointer(evt, this.gInner.node());
 
+      // Determine the closest point to the cursor
       // TODO Points could be memoized based on hidden z items
       const points = d3.map(this.data, (d) => {
         if (this.hidden.has(d.z)) return null;
@@ -442,21 +448,28 @@ export class LineChart extends CategoricalChart {
       // Exit early if no point was found
       if (typeof index === "undefined") return;
 
-      // Only trigger the callback when the index changes
-      if (prevIndex && prevIndex == index) return;
+      // TODO To only trigger the callback when the index changes
+      // if (prevIndex && prevIndex == index) return;
 
       this.placeDot(index);
 
       const d = this.data[index];
 
-      // Data that will be provided to the callback
-      // TODO Provide both offset and page coordinates?
+      // Data that will be provided to the callback: include both the coordinates
+      // of the dot and the pointer, both in relation to the page
+      const [dx, dy] = pageXY(this.dot.node());
+      const [px, py] = d3.pointer(evt, null);
+
       const data = {
         x: d.x,
         y: d.y,
         z: d.z,
-        dx: this.x(d.x) + this.layout.pad.left,
-        dy: this.y(d.y) + this.layout.pad.top,
+        // Dot page coordinates
+        dx: dx,
+        dy: dy,
+        // Pointer page coordinates
+        px: px,
+        py: py,
       };
 
       if (move) {

@@ -17,14 +17,8 @@ body {
   flex: columns;
   justify-content: space-between;
 }
-#title {
-  display: flex;
-  flex: columns;
-  align-items: center;
-  justify-content: start;
-}
-#title button {
-  margin-left: 10px;
+.buttons {
+
 }
 #title h1 {
   font-weight: normal;
@@ -112,9 +106,11 @@ body {
     <div id="menu">
       <div id="title">
         <h1>Candlestick</h1>
-        <button id="log">Log</button>
-        <button id="linear">Linear</button>
-        <button id="reset">Reset</button>
+        <div class="buttons">
+          <button id="log">Log</button>
+          <button id="linear">Linear</button>
+          <button id="reset">Reset</button>
+        </div>
       </div>
       <div id="hud"></div>
     </div>
@@ -166,7 +162,8 @@ const percent = new Intl.NumberFormat('en-US', {
 
 const ohlcv = charts.OHLCV(data, charts.parseArrayOHLCV)
   .screenHeightPercent(0.8)
-  .priceAxisRight();
+  .priceAxisRight()
+  .staggerOpening();
 ohlcv.render("#chart");
 
 document.getElementById("log").addEventListener("click", ohlcv.useLog.bind(ohlcv));
@@ -175,7 +172,19 @@ document.getElementById("reset").addEventListener("click", ohlcv.reset.bind(ohlc
 
 const hud = document.querySelector("#hud");
 
+const tooltip = d3
+  .select("body")
+  .append("div")
+  .style("pointer-events", "none")
+  .style("position", "absolute")
+  .style("visibility", "hidden")
+
 function onMove(data) {
+  // For a tooltip that follows the mouse
+  // tooltip.html(`<span>${data.c}</span>`)
+  // const [tx, ty, align] = charts.placeTooltipTop(ohlcv.svg.node(), tooltip.node(), data.px, data.py);
+  // tooltip.style("left", `${tx}px`).style("top", `${ty}px`).style("visibility", null);
+
   ohlcv.spotlight(data.index);
   if (typeof data.delta !== 'undefined' && data.delta !== null ) {
     let clone = hudTemplate.content.cloneNode(true);
@@ -192,6 +201,7 @@ function onMove(data) {
 function onLeave() {
   hud.innerHTML = "";
   ohlcv.noSpotlight();
+  tooltip.style("visibility", "hidden");
 }
 
 ohlcv.onEvent(onMove, onLeave);
