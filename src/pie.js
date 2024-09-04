@@ -257,14 +257,24 @@ export class PieChart extends CategoricalChart {
     };
 
     const pointermove = (evt, d) => {
+      // Touch events keep the target where the touch event started
+      let target = evt.target;
+
       if (evt.touches) {
-        // Prevent scroll on touch devices
-        evt.preventDefault();
+        evt.preventDefault(); // Prevent scroll on touch devices
         evt = evt.touches[0];
+        // Get the element at the current touch event
+        target = document.elementFromPoint(evt.clientX, evt.clientY);
+        // If the target element doesn't have a parent or data, exit early
+        // This likely means it is a non-slice element
+        // TODO Trigger a pointerleave?
+        if (!target || !target.parentNode) return;
+        d = d3.select(target).datum();
+        if (!d || !d.data) return;
       }
 
       // TODO Why doesn't pageXY work with the rectangle?
-      const rect = evt.target.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
       const [px, py] = d3.pointer(evt, null);
 
       // TODO Return the centroid?

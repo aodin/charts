@@ -417,21 +417,34 @@ export class BarChart extends CategoricalChart {
 
   onEvent(move, leave) {
     const pointermove = (evt, d) => {
+      // Touch events keep the target where the touch event started
+      let target = evt.target;
+
       if (evt.touches) {
-        // Prevent scroll on touch devices
-        evt.preventDefault();
+        evt.preventDefault(); // Prevent scroll on touch devices
         evt = evt.touches[0];
+        // Get the element at the current touch event
+        target = document.elementFromPoint(evt.clientX, evt.clientY);
+        // If the target element doesn't have a parent or data, exit early
+        // This likely means it is a non-bar element
+        // TODO Trigger a pointerleave?
+        if (!target || !target.parentNode) return;
+        d = d3.select(target).datum();
+        if (!d || !d.data) return;
       }
+
+      const barData = d3.select(target.parentNode).data();
+      if (!barData) return;
 
       // TODO Is this really the best way to get the data?
       const x = d.data[0];
       const y = d[0] < 0 ? d[0] - d[1] : d[1] - d[0];
-      const z = d3.select(evt.srcElement.parentNode).data()[0].key;
+      const z = barData[0].key;
 
       // Data that will be provided to the callback: include both the coordinates
       // of the bar and the pointer, both in relation to the page
       // TODO Why doesn't pageXY work with the rectangle?
-      const rect = evt.target.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
       const [px, py] = d3.pointer(evt, null);
       const data = {
         x: x,

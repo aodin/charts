@@ -11,6 +11,10 @@ body {
 }
 h1 {
   font-weight: normal;
+  margin-bottom: 5px;
+}
+.buttons {
+  margin-bottom: 10px;
 }
 rect {
   stroke: black;
@@ -86,8 +90,10 @@ rect {
   <body>
     <div class="title">
       <h1>Bar Chart</h1>
-      <button id="reset">Show all</button>
-      <button id="hide">Hide all</button>
+      <div class="buttons">
+        <button id="reset">Show all</button>
+        <button id="hide">Hide all</button>
+      </div>
     </div>
     <div id="legend"></div>
     <div id="chart"></div>
@@ -128,6 +134,8 @@ const dates = d3.map([
 ], d3.isoParse);
 
 const zs = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+const units = d3.format(",.0f");
 
 // Create random data
 const data = []
@@ -190,16 +198,13 @@ const tooltip = d3
   .style("position", "absolute")
   .style("visibility", "hidden");
 
-const bbox = document.getElementById("chart-tooltip");
-const rect = document.getElementById("chart");
-
 const monthYear = d3.utcFormat("%b %Y");
 
-function onMove(d) {
+function onMove(d, evt) {
   // bar.highlight(d.key);
   // bar.highlight(d.z);
-  tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${d.y}`);
-  const [tx, ty, align] = charts.placeTooltip(rect, bbox, d.px, d.py);
+  tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${units(d.y)}`);
+  const [tx, ty, align] = charts.placeTooltip(bar.svg.node(), tooltip.node(), d.px, d.py);
   tooltip
     .style("visibility", null)
     .style("text-align", align)

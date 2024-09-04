@@ -9,6 +9,10 @@ body {
 }
 h1 {
   font-weight: normal;
+  margin-bottom: 5px;
+}
+.buttons {
+  margin-bottom: 10px;
 }
 #chart text {
   font-size: 13px;
@@ -84,8 +88,10 @@ h1 {
   <body>
     <div class="title">
       <h1>Area Chart</h1>
-      <button id="reset">Show all</button>
-      <button id="hide">Hide all</button>
+      <div class="buttons">
+        <button id="reset">Show all</button>
+        <button id="hide">Hide all</button>
+      </div>
     </div>
     <div id="legend"></div>
     <div id="chart"></div>
@@ -160,7 +166,7 @@ area.legend.forEach((item) => {
   });
 });
 
-// Start with everything hidden
+// NOTE To start with everything hidden:
 // area.startHidden();
 // document.querySelectorAll("#legend > div").forEach((div) => {
 //   div.dataset.hidden = "true";
@@ -177,12 +183,10 @@ const tooltip = d3
   .style("visibility", "hidden");
 
 const monthYear = d3.utcFormat("%b %Y");
-const container = document.getElementById("chart");
 
 function onMove(d) {
-  // area.highlight(d.key);
   tooltip.html(`<strong>${d.z}</strong></br><em>${monthYear(d.x)}</em></br>${d.y}`);
-  let [tx, ty, align] = charts.placeTooltip(container, tooltip.node(), d.px, d.py);
+  let [tx, ty, align] = charts.placeTooltip(area.svg.node(), tooltip.node(), d.px, d.py);
 
   tooltip
     .style("visibility", null)
@@ -192,7 +196,6 @@ function onMove(d) {
 }
 
 function onLeave(d) {
-  // area.noHighlight()
   tooltip.style("visibility", "hidden");
 }
 

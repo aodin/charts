@@ -326,14 +326,21 @@ export class AreaChart extends CategoricalChart {
     );
 
     const pointermove = (evt, d) => {
+      let key = d.key;
       if (evt.touches) {
-        // Prevent scroll on touch devices
-        evt.preventDefault();
+        evt.preventDefault(); // Prevent scroll on touch devices
         evt = evt.touches[0];
+        const target = document.elementFromPoint(evt.clientX, evt.clientY);
+        if (!target) return;
+        const targetData = d3.select(target).datum();
+        // TODO Trigger a pointerleave?
+        if (!targetData) return;
+        key = targetData.key;
+        if (!key) return;
       }
       let [xm, ym] = d3.pointer(evt, this.gInner.node());
       const index = d3.bisectCenter(coords, xm);
-      const point = indexed.get(d.key).get(xs[index]);
+      const point = indexed.get(key).get(xs[index]);
 
       // Data that will be provided to the callback: include the page coordinates
       // of the pointer

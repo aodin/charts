@@ -54,18 +54,32 @@ const tooltip = d3
   .style("position", "absolute")
   .style("visibility", "hidden")
 
+let currentHighlight = null;
+
 function onEnter(d, evt) {
-  pie.enlarge(d.z, true);
-  pie.highlight(d.z);
+  if (currentHighlight != d.z) {
+    pie.enlarge(d.z, true);
+    pie.highlight(d.z);
+    currentHighlight = d.z;
+  }
 }
 
 function onMove(d, evt) {
+  if (currentHighlight != d.z) {
+    pie.noHighlight();
+    pie.reset();
+    pie.enlarge(d.z, true);
+    pie.highlight(d.z);
+    currentHighlight = d.z;
+  }
+  tooltip.html(`<strong>${d.z}</strong></br>${d.y}`);
   const [tx, ty, align] = charts.placeTooltipTop(pie.svg.node(), tooltip.node(), d.px, d.py);
   tooltip.style("left", `${tx}px`).style("top", `${ty}px`).style("visibility", null);
 }
 
 function onLeave(d, evt) {
   tooltip.style("visibility", "hidden");
+  currentHighlight = null;
   pie.noHighlight();
   pie.reset();
 }
