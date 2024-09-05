@@ -49,9 +49,7 @@ function extentData(data, start = 0, end) {
 
 function invertBand(scale, x) {
   const domain = scale.domain();
-  const padOuter = scale(domain[0]);
-  const eachBand = scale.step();
-  const index = Math.floor((x - padOuter) / eachBand);
+  const index = Math.floor((x - scale(domain[0])) / scale.step());
   return Math.max(0, Math.min(index, domain.length - 1));
 }
 
@@ -330,8 +328,10 @@ export class CandlestickChart extends Chart {
 
     this.scaleX = d3
       .scaleBand(this.X, [0, this.layout.innerWidth])
+      // .padding(this.config.BAND_PAD)
       .paddingInner(this.config.BAND_PAD)
-      .align(0.5);
+      .paddingOuter(this.config.BAND_PAD / 2);
+    // .align(0.5);
     // NOTE do not use round
 
     // NOTE The date formatter needs to be created because it uses a
@@ -370,15 +370,13 @@ export class CandlestickChart extends Chart {
       .axisBottom(this.scaleX)
       .tickValues(this.xValues)
       .tickFormat(dates)
-      .tickSize(3);
+      .tickSize(4);
 
     this.gPrice = this.inner
       .append("g")
       .attr("transform", yTransform)
       .attr("class", "y axis")
       .call(axisY.tickSize(0));
-
-    const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
 
     // Volume elements are always rendered even if their height is zero
     this.axisVolume = d3
@@ -415,7 +413,7 @@ export class CandlestickChart extends Chart {
       .join("g")
       .attr(
         "transform",
-        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+        (d) => `translate(${this.scaleX(d.x) + this.scaleX.bandwidth() / 2},0)`,
       );
 
     this.volumeBars = this.volumeSlots
@@ -438,7 +436,7 @@ export class CandlestickChart extends Chart {
       .attr("class", deltaClass)
       .attr(
         "transform",
-        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+        (d) => `translate(${this.scaleX(d.x) + this.scaleX.bandwidth() / 2},0)`,
       );
 
     this.wicks = this.candles
@@ -459,10 +457,7 @@ export class CandlestickChart extends Chart {
     this.gx = this.inner
       .append("g")
       .attr("class", "x axis")
-      .attr(
-        "transform",
-        `translate(${bandPad + 0.5},${this.layout.innerHeight})`,
-      )
+      .attr("transform", `translate(0,${this.layout.innerHeight})`)
       .call(this.axisX);
 
     // Brush for zoom
@@ -521,14 +516,10 @@ export class CandlestickChart extends Chart {
     this.axisX.tickValues(this.xValues).tickFormat(dates);
 
     // Update the x-axis
-    const bandPad = (this.scaleX.bandwidth() * this.config.BAND_PAD) / 2;
     this.gx
       .transition()
       .duration(this.config.DURATION_MS)
-      .attr(
-        "transform",
-        `translate(${bandPad + 0.5},${this.layout.innerHeight})`,
-      )
+      .attr("transform", `translate(0,${this.layout.innerHeight})`)
       .call(this.axisX);
 
     // Update the y-axis
@@ -549,7 +540,7 @@ export class CandlestickChart extends Chart {
       .duration(this.config.DURATION_MS)
       .attr(
         "transform",
-        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+        (d) => `translate(${this.scaleX(d.x) + this.scaleX.bandwidth() / 2},0)`,
       );
 
     this.bars
@@ -583,7 +574,7 @@ export class CandlestickChart extends Chart {
       .duration(this.config.DURATION_MS)
       .attr(
         "transform",
-        (d) => `translate(${this.scaleX(d.x) + this.scaleX.step() / 2.0},0)`,
+        (d) => `translate(${this.scaleX(d.x) + this.scaleX.bandwidth() / 2},0)`,
       );
 
     this.volumeBars
@@ -629,8 +620,9 @@ export class CandlestickChart extends Chart {
   spotlight(index) {
     // TODO We only need to pad if width is set to bandwidth instead of step
     // const pad = this.scaleX.bandwidth() * this.scaleX.paddingInner() * 0.5;
+    const offset = this.scaleX.step() * this.scaleX.paddingOuter();
     this.spotlightBar
-      .attr("x", this.scaleX(this.data[index].x))
+      .attr("x", this.scaleX(this.data[index].x) - offset)
       .attr("width", this.scaleX.step())
       .attr("y", 0)
       .attr("height", this.layout.innerHeight)

@@ -123,7 +123,7 @@ export function appendSVG(selector, width, height) {
   return d3
     .select(selector)
     .append("svg")
-    .attr("viewBox", [0, 0, width, height])
+    .attr("viewBox", `0 0 ${width} ${height}`)
     .attr("style", "max-width: 100%; height: intrinsic;")
     .style("-webkit-tap-highlight-color", "transparent")
     .style("overflow", "visible");
