@@ -50,7 +50,7 @@ export function pageXY(node) {
   if (svg.createSVGPoint) {
     let point = svg.createSVGPoint();
     point = point.matrixTransform(node.getScreenCTM());
-    return [point.x, point.y];
+    return [point.x + +window.scrollX, point.y + +window.scrollY];
   }
   if (node.getBoundingClientRect) {
     // Calculate the page coordinates by adding the scroll offsets
