@@ -50,6 +50,11 @@ export class Chart {
   noAnimation() {
     return this.animationDuration(0);
   }
+
+  node() {
+    // Return the chart svg node. Return null if the chart hasn't been rendered.
+    return this.svg ? this.svg.node() : null;
+  }
 }
 
 export class CategoricalChart extends Chart {
@@ -119,6 +124,12 @@ export class CategoricalChart extends Chart {
 
   showAll() {
     this.hidden.clear();
+    this.toggle();
+  }
+
+  showOnly(...z) {
+    // Show only the given z elements, all others will be hidden
+    this.hidden = new d3.InternSet(this.Z).difference(new d3.InternSet(z));
     this.toggle();
   }
 }

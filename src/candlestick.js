@@ -70,6 +70,7 @@ export class CandlestickChart extends Chart {
       DURATION_MS: 500,
       DELAY_MS: 0,
       DELAY_ONCE: false,
+      DISABLE_BRUSH: false,
       PRICE_AXIS_RIGHT: false,
       VOLUME_AXIS_RIGHT: true,
       HIDE_VOLUME_AXIS: false,
@@ -148,6 +149,12 @@ export class CandlestickChart extends Chart {
 
   defaultLinear() {
     this.config.LOG_Y = false;
+    return this;
+  }
+
+  disableZoom() {
+    // Do not trigger zoom on brush events
+    this.config.DISABLE_BRUSH = true;
     return this;
   }
 
@@ -461,18 +468,17 @@ export class CandlestickChart extends Chart {
       .call(this.axisX);
 
     // Brush for zoom
-    this.brush = d3
-      .brushX()
-      .extent([
-        [0, 0],
-        [this.layout.innerWidth, this.layout.innerHeight],
-      ])
-      .on("end", this.zoom.bind(this));
+    this.brush = d3.brushX().extent([
+      [0, 0],
+      [this.layout.innerWidth, this.layout.innerHeight],
+    ]);
 
-    this.gBrush = this.inner
-      .append("g")
-      .attr("class", "brush")
-      .call(this.brush.bind(this));
+    this.gBrush = this.inner.append("g").attr("class", "brush");
+
+    if (!this.config.DISABLE_BRUSH) {
+      this.brush.on("end", this.zoom.bind(this));
+      this.gBrush.call(this.brush.bind(this));
+    }
 
     // Optional spotlight of a bar
     // Don't call the class "tooltip" - that interferes with Bootstrap

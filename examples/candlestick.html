@@ -163,6 +163,8 @@ const percent = new Intl.NumberFormat('en-US', {
 const ohlcv = charts.OHLCV(data, charts.parseArrayOHLCV)
   .screenHeightPercent(0.8)
   .priceAxisRight()
+  // .disableZoom()
+  .hideVolumeAxis()
   .staggerOpening();
 ohlcv.render("#chart");
 
