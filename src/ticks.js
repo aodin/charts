@@ -61,3 +61,21 @@ export function filterTicksAutoOffset(ticks, layout, labelWidth) {
     (d, i) => i - offset >= 0 && (i - offset) % interval === 0,
   );
 }
+
+export function invertBand(scale, x) {
+  const domain = scale.domain();
+  const index = Math.floor((x - scale(domain[0])) / scale.step());
+  return Math.max(0, Math.min(index, domain.length - 1));
+}
+
+export function zoomRange(domain, width, start, end) {
+  // Return the range extent needed to zoom to the start and end indices of the domain
+  let w = end - start + 1;
+  let ratio = 1;
+  if (w < domain.length) {
+    ratio = domain.length / w;
+  }
+  const zoomWidth = width * ratio;
+  const offsetX = (start / domain.length) * zoomWidth;
+  return [0 - offsetX, zoomWidth - offsetX];
+}

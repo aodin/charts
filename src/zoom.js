@@ -28,6 +28,7 @@ export class LineChartWithZoom extends CategoricalChart {
     this.config = {
       LAYOUT: {},
       DURATION_MS: 500,
+      FPS: 48,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       HIGHLIGHT_STROKE_WIDTH: 2.0, // Width when highlighted
       STROKE_WIDTH: 1.5, // Width when not highlighted
@@ -393,10 +394,12 @@ export class LineChartWithZoom extends CategoricalChart {
 
     // Separate mouse and touch events
     this.svg
-      .on("mousemove", throttle(pointermove, 20.83)) // 48 fps
+      .on("mousemove", throttle(pointermove, 1000.0 / this.config.FPS))
       .on("mouseleave", pointerleave)
       .on("touchstart", pointermove, { passive: false })
-      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchmove", throttle(pointermove, 1000.0 / this.config.FPS), {
+        passive: false,
+      })
       .on("touchend", pointerleave, { passive: false });
   }
 

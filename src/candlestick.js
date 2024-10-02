@@ -5,7 +5,12 @@ import { volume } from "./formats";
 import { layoutSVG } from "./layout";
 import { parseArrayOHLCV, parseVerboseOHLCV } from "./parsers";
 import { throttle } from "./throttle";
-import { maxLabelSize, filterTicksAutoOffset } from "./ticks";
+import {
+  maxLabelSize,
+  filterTicksAutoOffset,
+  invertBand,
+  zoomRange,
+} from "./ticks";
 import { makeDateFormatter } from "./timeseries";
 import { placeTooltip, placeTooltipTop } from "./tooltip";
 
@@ -26,18 +31,6 @@ function deltaClass(d) {
   return classes[signOf(d)];
 }
 
-function zoomRange(domain, width, start, end) {
-  // Return the range extent needed to zoom to the start and end indices of the domain
-  let w = end - start + 1;
-  let ratio = 1;
-  if (w < domain.length) {
-    ratio = domain.length / w;
-  }
-  const zoomWidth = width * ratio;
-  const offsetX = (start / domain.length) * zoomWidth;
-  return [0 - offsetX, zoomWidth - offsetX];
-}
-
 function extentData(data, start = 0, end) {
   // Calculate the extent of the price data, optionally with a slice of the data
   if (end) {
@@ -45,12 +38,6 @@ function extentData(data, start = 0, end) {
   }
   const minY = d3.min(d3.map(data, (d) => d.l));
   return [minY, d3.max(d3.map(data, (d) => d.h))];
-}
-
-function invertBand(scale, x) {
-  const domain = scale.domain();
-  const index = Math.floor((x - scale(domain[0])) / scale.step());
-  return Math.max(0, Math.min(index, domain.length - 1));
 }
 
 export class CandlestickChart extends Chart {
@@ -67,6 +54,7 @@ export class CandlestickChart extends Chart {
       VOLUME_RATIO: 0.0,
       LOG_Y: false, // We need to know which scale is used for proper tick formats
       BAND_PAD: 0.1,
+      FPS: 48,
       DURATION_MS: 500,
       DELAY_MS: 0,
       DELAY_ONCE: false,
@@ -689,10 +677,12 @@ export class CandlestickChart extends Chart {
     };
 
     this.svg
-      .on("mousemove", throttle(pointermove, 20.83)) // 48 fps
+      .on("mousemove", throttle(pointermove, 1000.0 / this.config.FPS))
       .on("mouseleave", pointerleave)
       .on("touchstart", pointermove, { passive: false })
-      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchmove", throttle(pointermove, 1000.0 / this.config.FPS), {
+        passive: false,
+      })
       .on("touchend", pointerleave, { passive: false });
   }
 

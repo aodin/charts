@@ -60,6 +60,7 @@ export class BarChart extends CategoricalChart {
       BAND_PAD: 0.2,
       BAR_STROKE_WIDTH: 1.0,
       DURATION_MS: 500,
+      FPS: 48,
       DELAY_MS: 0,
       DELAY_ONCE: false,
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
@@ -470,10 +471,12 @@ export class BarChart extends CategoricalChart {
 
     // Separate mouse and touch events
     this.bars
-      .on("mousemove", throttle(pointermove, 20.83)) // 48 fps
+      .on("mousemove", throttle(pointermove, 1000.0 / this.config.FPS))
       .on("mouseleave", pointerleave)
       .on("touchstart", pointermove, { passive: false })
-      .on("touchmove", throttle(pointermove, 20.83), { passive: false })
+      .on("touchmove", throttle(pointermove, 1000.0 / this.config.FPS), {
+        passive: false,
+      })
       .on("touchend", pointerleave, { passive: false });
   }
 

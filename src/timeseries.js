@@ -60,3 +60,8 @@ export function yearToIso(value) {
   const year = parseInt(value);
   return d3.isoParse(`${year}-01-01`);
 }
+
+export function unixDateRange(start, end) {
+  // Return an inclusive array of all dates from start to end
+  return d3.unixDay.range(start, d3.unixDay.offset(end, 1));
+}

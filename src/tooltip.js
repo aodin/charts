@@ -6,7 +6,7 @@ export function placeTooltip(container, tooltip, dx, dy, padding = 5) {
   const px = dx - bbox.left - window.scrollX;
   const py = dy - bbox.top - window.scrollY;
 
-  let x = 0;
+  let x = padding;
   let y = -tooltip.offsetHeight - padding;
   let align = "left";
 
@@ -30,7 +30,7 @@ export function placeTooltipTop(container, tooltip, dx, dy, padding = 5) {
   const bbox = container.getBoundingClientRect();
   const px = dx - bbox.left - window.scrollX;
 
-  let x = 0;
+  let x = padding;
   let y = -tooltip.offsetHeight - padding;
   let align = "left";
 
