@@ -3,6 +3,7 @@ Line chart
 */
 import * as d3 from "d3";
 
+import { animatedDashArray } from "./animation";
 import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
@@ -47,6 +48,7 @@ export class LineChart extends CategoricalChart {
       MARGIN_TICK: 3,
     };
 
+    this.patterns = {}; // {z: dash array pattern}
     this.data = this.parseData(data, parser);
     this.items = this.parseItems(data);
     this.Z = this.parseZ(data);
@@ -69,6 +71,12 @@ export class LineChart extends CategoricalChart {
 
   setColors(data) {
     return d3.scaleOrdinal().domain(this.Z).range(this.config.COLORS);
+  }
+
+  setPattern(z, pattern) {
+    // Set the dash array pattern for a z item
+    this.patterns[z] = pattern;
+    return this;
   }
 
   /* Chained config methods */
@@ -324,11 +332,18 @@ export class LineChart extends CategoricalChart {
 
   getStrokeDasharray(d, i, lengths, previousUpdate) {
     // By default, the dasharray performs an opening animation
+    if (d[0] in this.patterns) {
+      // Custom patterns can be specified with setPattern()
+      const p = this.patterns[d[0]];
+      if (previousUpdate) return p.join(" ");
+      return lengths[i] ? animatedDashArray(p, lengths[i]) : null;
+    }
     if (previousUpdate) return "1 0";
     return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
   }
 
   getStrokeDashOffset(d, i, lengths) {
+    // TODO Option to reverse opening? Set to -length?
     return lengths[i] || 0;
   }
 

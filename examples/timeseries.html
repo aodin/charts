@@ -123,6 +123,7 @@ zs.forEach((z, i) => {
 const line = new charts.TimeSeries(data)
   .screenHeightPercent(0.7)
   .hideIfEmpty()
+  .setPattern("G", [4, 8])
   .useContinuousScheme(d3.interpolatePlasma, 0.4, 0.95);
 
 const legend = document.querySelector("#legend");
