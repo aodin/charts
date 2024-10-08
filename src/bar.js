@@ -135,11 +135,15 @@ export class BarChart extends CategoricalChart {
   }
   /* End config chained methods */
 
-  delay(d, i) {
+  duration(d, i) {
     if (this.config.DELAY_ONCE && this.opened) {
-      return 0;
+      return this.config.DURATION_MS;
     }
-    return i * this.config.DELAY_MS;
+    return this.config.DURATION_MS / 2;
+  }
+
+  delay(d, i) {
+    return this.config.DELAY_ONCE && this.opened ? 0 : i * this.config.DELAY_MS;
   }
 
   getStack(data) {
@@ -393,7 +397,7 @@ export class BarChart extends CategoricalChart {
       .data((D) => D)
       .transition()
       .delay(this.delay.bind(this))
-      .duration(this.config.DURATION_MS)
+      .duration(this.duration.bind(this))
       .attr("stroke-width", this.config.BAR_STROKE_WIDTH)
       .attr("x", (d, i) => this.x(d.data[0]))
       .attr("y", (d) => (d[1] > d[0] ? this.y(d[1]) : this.y(d[0])))

@@ -176,18 +176,15 @@ export class CandlestickChart extends Chart {
   }
   /* End config chained methods */
 
-  delay(d, i) {
-    if (this.config.DELAY_ONCE && this.opened) {
-      return 0;
-    }
-    return i * this.config.DELAY_MS;
-  }
-
   duration(d, i) {
     if (this.config.DELAY_ONCE && this.opened) {
       return this.config.DURATION_MS;
     }
     return this.config.DURATION_MS / 2;
+  }
+
+  delay(d, i) {
+    return this.config.DELAY_ONCE && this.opened ? 0 : i * this.config.DELAY_MS;
   }
 
   get volumeAxesIsVisible() {
