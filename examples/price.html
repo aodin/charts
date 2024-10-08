@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>@aodin/charts - OHLCV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+/* svg {
+  shape-rendering: crispEdges;
+} */
+body {
+  font-family: sans-serif;
+  color: white;
+  background-color: black;
+}
+#menu {
+  display: flex;
+  flex: columns;
+  justify-content: space-between;
+}
+.buttons {
+
+}
+#title h1 {
+  font-weight: normal;
+  margin: 20px 0 10px;
+}
+#hud p {
+  margin-bottom: 5px;
+}
+#hud div {
+  height: 20px;
+}
+@media (max-width: 600px) {
+  #title h1 {
+    font-size: 24px;
+    margin: 10px;
+  }
+  text {
+    font-size: 10px !important;
+  }
+  #hud {
+    font-size: 10px !important;
+  }
+}
+#chart .domain {
+  display: none;
+}
+#chart .x .domain {
+  display: block !important;
+  stroke: white !important;
+}
+.tick text {
+  font-size: 13px;
+}
+.volume .tick text {
+  font-size: 11px;
+}
+.x .tick text {
+  font-size: 12px;
+}
+#hud .up {
+  color: #1ebc8c;
+}
+#hud .down {
+  color: #f34d27;
+}
+.up {
+  stroke: #1ebc8c;
+}
+.down {
+  stroke: #f34d27;
+}
+.even {
+  stroke: #b2b2b2;
+}
+.volume line {
+  stroke: #666;
+}
+.spotlight {
+  fill: #bbb;
+  opacity: 0.2;
+}
+.wick {
+  opacity: 0.8;
+}
+#chart {
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* Brush */
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+.brush .selection {
+  fill: #777;
+  fill-opacity: 0.3;
+  stroke: #fff;
+}
+.grid line {
+  stroke: rgba(187, 187, 187, 0.5); /* semi-transparent lines */
+}
+    </style>
+  </head>
+  <body>
+    <div id="menu">
+      <div id="title">
+        <h1>Candlestick</h1>
+        <div class="buttons">
+          <button id="log">Log</button>
+          <button id="linear">Linear</button>
+          <button id="reset">Reset</button>
+          <button id="ma50">Hide ma(50)</button>
+          <button id="ma50x">Show ma(50)</button>
+        </div>
+      </div>
+      <div id="hud"></div>
+    </div>
+    <div id="chart"></div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="../dist/candlestick.min.js"></script>
+    <template id="hudTemplate">
+      <p class="date"></p>
+      <div>
+        <span class="symbol"></span>
+        <strong class="delta"></strong>
+      </div>
+    </template>
+    <script type="text/javascript">
+const data = [
+  ["2024-04-25", 8.62, 8.71, 8.46, 8.52, 21761398, 8.6],
+  ["2024-04-26", 8.55, 9.04, 8.5, 9.04, 28206182, 8.7],
+  ["2024-04-29", 9.21, 9.41, 9.02, 9.38, 30495107, 8.7],
+  ["2024-04-30", 9.11, 9.2, 8.9, 8.9, 22811245, 8.9],
+  ["2024-05-01", 8.85, 9.55, 8.84, 9.21, 27659792, 9.3],
+  ["2024-05-02", 9.42, 10.13, 9.215, 9.83, 54756081, 9.5],
+  ["2024-05-03", 10.13, 10.408, 9.9, 10.07, 47137960, 9.8],
+  ["2024-05-06", 10.2, 10.495, 10.08, 10.33, 30743169, 10.5],
+  ["2024-05-07", 11.14, 11.215, 10.07, 10.25, 98048000, 14.8],
+  ["2024-05-08", 9.51, 10.28, 9.25, 10.27, 67500909, 10.5],
+  ["2024-05-09", 10.27, 10.47, 10.04, 10.27, 31404813, 10.4],
+  ["2024-05-10", 10.2, 10.41, 9.84, 9.99, 29142689, 10.4],
+  ["2024-05-13", 10.04, 11.19, 10.025, 10.9, 65277004, 10.7],
+  ["2024-05-14", 11.48, 12.1299, 11.11, 11.19, 60947936, 10.9],
+  ["2024-05-15", 11.06, 11.14, 10.14, 10.2, 61602771, 10.6],
+  ["2024-05-16", 10.24, 10.41, 10.08, 10.13, 34737330, 10.5],
+  ["2024-05-17", 10.07, 10.51, 9.89, 10.5, 23862330, 10.4],
+  ["2024-05-20", 10.43, 10.6, 10.21, 10.28, 21619789, 10.3],
+  ["2024-05-21", 10.24, 10.35, 9.98, 10.05, 23559105, 10.5],
+  ["2024-05-22", 10.02, 10.74, 9.94, 10.7, 37613011, 10.3],
+  ["2024-05-23", 10.55, 10.5501, 9.89, 9.95, 37137021, 10.5],
+  ["2024-05-24", 10.06, 10.46, 10.02, 10.44, 54715320, 10.5],
+];
+
+const GAIN = '&#9650;';
+const LOSS = '&#9660;';
+
+const percent = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+  signDisplay: 'exceptZero',
+}).format;
+
+function parse(d) {
+  return {
+    x: d3.isoParse(d[0]),
+    o: d[1],
+    h: d[2],
+    l: d[3],
+    c: d[4],
+    v: d[5],
+    ma50: d[6],
+  };
+}
+
+const ohlcv = charts.OHLCV(data, parse)
+  .screenHeightPercent(0.8)
+  .priceAxisRight()
+  // .disableZoom()
+  .hideVolumeAxis()
+  .staggerOpening()
+  .doNotRescaleY()
+  // .addLineBelow("ma50");
+  .addLineAbove("ma50", "currentColor", [4, 6])
+  .addLineAbove("c", "currentColor");
+
+ohlcv.render("#chart");
+
+document.getElementById("log").addEventListener("click", ohlcv.useLog.bind(ohlcv));
+document.getElementById("linear").addEventListener("click", ohlcv.useLinear.bind(ohlcv));
+document.getElementById("reset").addEventListener("click", ohlcv.reset.bind(ohlcv));
+
+const hud = document.querySelector("#hud");
+
+const tooltip = d3
+  .select("body")
+  .append("div")
+  .style("pointer-events", "none")
+  .style("position", "absolute")
+  .style("visibility", "hidden")
+
+function onMove(data) {
+  // For a tooltip that follows the mouse
+  // tooltip.html(`<span>${data.c}</span>`)
+  // const [tx, ty, align] = charts.placeTooltipTop(ohlcv.svg.node(), tooltip.node(), data.px, data.py);
+  // tooltip.style("left", `${tx}px`).style("top", `${ty}px`).style("visibility", null);
+
+  ohlcv.spotlight(data.index);
+  if (typeof data.delta !== 'undefined' && data.delta !== null ) {
+    let clone = hudTemplate.content.cloneNode(true);
+    clone.querySelector(".date").innerHTML = data.x.toISOString().substring(0, 10);
+    clone.querySelector(".symbol").innerHTML = data.delta >= 0 ? GAIN : LOSS;
+    clone.querySelector(".delta").textContent = percent(data.percent);
+    clone.querySelector("div").classList = data.delta > 0 ? "up" : "down";
+    hud.replaceChildren(clone);
+  } else {
+    hud.innerHTML = "";
+  }
+}
+
+function onLeave() {
+  hud.innerHTML = "";
+  ohlcv.noSpotlight();
+  tooltip.style("visibility", "hidden");
+}
+
+ohlcv.onEvent(onMove, onLeave);
+
+document.getElementById("chart").addEventListener("dblclick", () => ohlcv.reset());
+document.getElementById("ma50").addEventListener("click", () => ohlcv.hideLine("ma50"));
+document.getElementById("ma50x").addEventListener("click", () => ohlcv.showLine("ma50"));
+    </script>
+  </body>
+</html>
