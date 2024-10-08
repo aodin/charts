@@ -1,3 +1,4 @@
+export * from "./animation";
 export * from "./area";
 export * from "./bar";
 export * from "./candlestick";
@@ -8,10 +9,11 @@ export * from "./layout";
 export * from "./line";
 export * from "./magnitude";
 export * from "./options";
+export * from "./parsers";
 export * from "./pie";
 export * from "./text";
 export * from "./throttle";
-export * from "./tooltip";
 export * from "./ticks";
 export * from "./timeseries";
+export * from "./tooltip";
 export * from "./zoom";

@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 
+import { animatedDashArray } from "./animation";
 import { Chart } from "./chart";
 import { volume } from "./formats";
 import { layoutSVG } from "./layout";
@@ -55,7 +56,7 @@ export class CandlestickChart extends Chart {
       LOG_Y: false, // We need to know which scale is used for proper tick formats
       BAND_PAD: 0.1,
       FPS: 48,
-      DURATION_MS: 500,
+      DURATION_MS: 750,
       DELAY_MS: 0,
       DELAY_ONCE: false,
       DISABLE_BRUSH: false,
@@ -66,6 +67,9 @@ export class CandlestickChart extends Chart {
       RESCALE_Y: true,
       LAYOUT: {},
 
+      // For rendered lines
+      STROKE_WIDTH: 1.5,
+
       // Additional layout padding
       // TODO Specify an additional layout?
       MARGIN_RIGHT: 10,
@@ -75,10 +79,15 @@ export class CandlestickChart extends Chart {
       MARGIN_TICK: 2,
     };
 
-    this.opened = false; // Is set true after the initial animation
+    this.opened = false; // Set true after the initial animation
+    this.resetStroke = false; // Set true once the stroke has been updated once
 
     // Get data in a {x, o, h, l, c, v} format
     this.data = d3.map(data, parser);
+
+    // Config and rendered elements for lines
+    this.lines = {};
+    this.lineElements = {};
 
     // Also save the X axis, since it is used for filtering tick labels
     this.X = d3.map(this.data, (d) => d.x);
@@ -154,8 +163,8 @@ export class CandlestickChart extends Chart {
 
   staggerAnimation(value = 0) {
     // If not value is provided, stagger by a fraction of the total animation
-    if (!value) {
-      value = this.config.DURATION_MS / (this.X.length + 1);
+    if (!value && this.X.length) {
+      value = this.config.DURATION_MS / (2 * this.X.length);
     }
     this.config.DELAY_MS = value;
     return this;
@@ -172,6 +181,13 @@ export class CandlestickChart extends Chart {
       return 0;
     }
     return i * this.config.DELAY_MS;
+  }
+
+  duration(d, i) {
+    if (this.config.DELAY_ONCE && this.opened) {
+      return this.config.DURATION_MS;
+    }
+    return this.config.DURATION_MS / 2;
   }
 
   get volumeAxesIsVisible() {
@@ -221,6 +237,92 @@ export class CandlestickChart extends Chart {
   }
 
   updateLayout() {}
+
+  addLineAbove(name, color = "currentColor", pattern, strokeWidth) {
+    return this.addLine(name, color, true, pattern, strokeWidth);
+  }
+
+  addLineBelow(name, color = "currentColor", pattern, strokeWidth) {
+    return this.addLine(name, color, false, pattern, strokeWidth);
+  }
+
+  addLine(name, color = "currentColor", above = false, pattern, strokeWidth) {
+    // Add a new line to the chart - the key must match a property in the data elements
+    this.lines[name] = {
+      color: color,
+      above: above,
+      pattern: pattern,
+      strokeWidth: strokeWidth || this.config.STROKE_WIDTH,
+    };
+    return this;
+  }
+
+  showLine(name) {
+    this.lineElements[name].attr("opacity", 1.0);
+  }
+
+  hideLine(name) {
+    this.lineElements[name].attr("opacity", 0);
+  }
+
+  renderLine(name, x, y) {
+    // Adds a line to be rendered. The name should match the key in the data object
+    const config = this.lines[name];
+    const g = config.above
+      ? this.lineAbove.append("g")
+      : this.lineBelow.append("g");
+    const grouping = d3.group(this.data, () => name);
+
+    const line = d3
+      .line()
+      .digits(3)
+      .defined((d) => d.x && d[name])
+      .x((d) => x(d.x) + x.step() / 2)
+      .y((d) => y(d[name]));
+
+    const path = g
+      .attr("fill", "none")
+      .attr("stroke-width", config.strokeWidth)
+      .attr("stroke", config.color)
+      .attr("opacity", 1)
+      .selectAll("path")
+      .data(grouping)
+      .join("path")
+      .attr("d", ([, I]) => line(I));
+
+    const l = Math.ceil(path.node().getTotalLength());
+    const dash = config.pattern
+      ? animatedDashArray(config.pattern, l)
+      : `${l} ${l}`;
+    path.attr("stroke-dashoffset", l).attr("stroke-dasharray", dash);
+    this.lineElements[name] = path;
+  }
+
+  updateLine(name, x, y) {
+    const path = this.lineElements[name];
+    const config = this.lines[name];
+
+    const line = d3
+      .line()
+      .digits(3)
+      .defined((d) => d.x && d[name])
+      .x((d) => x(d.x) + x.step() / 2)
+      .y((d) => y(d[name]));
+
+    const animation = path
+      .transition()
+      .duration(this.config.DURATION_MS)
+      .attr("stroke-dashoffset", 0)
+      .attr("d", ([, I]) => line(I));
+
+    if (!this.resetStroke) {
+      animation.end().finally(() => {
+        const pattern = config.pattern ? config.pattern.join(" ") : "0";
+        path.attr("stroke-dasharray", pattern);
+        this.resetStroke = true;
+      });
+    }
+  }
 
   render(selector) {
     // If there is no data, do not render
@@ -323,14 +425,12 @@ export class CandlestickChart extends Chart {
 
     this.scaleX = d3
       .scaleBand(this.X, [0, this.layout.innerWidth])
-      // .padding(this.config.BAND_PAD)
       .paddingInner(this.config.BAND_PAD)
       .paddingOuter(this.config.BAND_PAD / 2);
-    // .align(0.5);
-    // NOTE do not use round
 
     // NOTE The date formatter needs to be created because it uses a
     // closure to determine a new year
+    // TODO Reset the date formatter whenever the x-axis is called
     let dates = this.makeDateFormatter();
 
     // Get the max tick label width for the x-axis
@@ -418,6 +518,12 @@ export class CandlestickChart extends Chart {
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("class", deltaClass);
 
+    // For rendering lines underneath the candlesticks
+    this.lineBelow = this.inner
+      .append("g")
+      .attr("clip-path", `url(#${clipPathID})`)
+      .attr("class", "lineBelow");
+
     this.price = this.inner.append("g").attr("class", "price");
 
     this.candles = this.price
@@ -448,12 +554,23 @@ export class CandlestickChart extends Chart {
       .attr("y1", this.scaleY(minY))
       .attr("y2", this.scaleY(minY));
 
+    // For rendering line above the candlesticks
+    this.lineAbove = this.inner
+      .append("g")
+      .attr("clip-path", `url(#${clipPathID})`)
+      .attr("class", "lineAbove");
+
     // Elements drawn last will appear on top
     this.gx = this.inner
       .append("g")
       .attr("class", "x axis")
       .attr("transform", `translate(0,${this.layout.innerHeight})`)
       .call(this.axisX);
+
+    // Draw any lines
+    for (let key in this.lines) {
+      this.renderLine(key, this.scaleX, this.scaleY);
+    }
 
     // Brush for zoom
     this.brush = d3.brushX().extent([
@@ -540,7 +657,7 @@ export class CandlestickChart extends Chart {
     this.bars
       .transition()
       .delay(this.delay.bind(this))
-      .duration(this.config.DURATION_MS)
+      .duration(this.duration.bind(this))
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("y1", (d) => this.scaleY(d.o))
       .attr("y2", (d) => this.scaleY(d.c));
@@ -548,7 +665,7 @@ export class CandlestickChart extends Chart {
     this.wicks
       .transition()
       .delay(this.delay.bind(this))
-      .duration(this.config.DURATION_MS)
+      .duration(this.duration.bind(this))
       .attr("stroke-width", this.wickThickness)
       .attr("y1", (d) => this.scaleY(d.l))
       .attr("y2", (d) => this.scaleY(d.h));
@@ -574,9 +691,14 @@ export class CandlestickChart extends Chart {
     this.volumeBars
       .transition()
       .delay(this.delay.bind(this))
-      .duration(this.config.DURATION_MS)
+      .duration(this.duration.bind(this))
       .attr("stroke-width", this.scaleX.bandwidth())
       .attr("y2", (d) => this.scaleVolume(d.v || 0));
+
+    // Update any lines
+    for (let key in this.lines) {
+      this.updateLine(key, this.scaleX, this.scaleY);
+    }
 
     this.opened = true;
   }
