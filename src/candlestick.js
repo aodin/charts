@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import { animatedDashArray } from "./animation";
+import { animatedDashArray, animatedDashOffset } from "./animation";
 import { Chart } from "./chart";
 import { volume } from "./formats";
 import { layoutSVG } from "./layout";
@@ -65,6 +65,7 @@ export class CandlestickChart extends Chart {
       HIDE_VOLUME_AXIS: false,
       VOLUME_TICK_COUNT: 1,
       RESCALE_Y: true,
+      CLAMP: true, // Axes clamps are enabled by default
       LAYOUT: {},
 
       // For rendered lines
@@ -80,7 +81,6 @@ export class CandlestickChart extends Chart {
     };
 
     this.opened = false; // Set true after the initial animation
-    this.resetStroke = false; // Set true once the stroke has been updated once
 
     // Get data in a {x, o, h, l, c, v} format
     this.data = d3.map(data, parser);
@@ -152,6 +152,11 @@ export class CandlestickChart extends Chart {
   disableZoom() {
     // Do not trigger zoom on brush events
     this.config.DISABLE_BRUSH = true;
+    return this;
+  }
+
+  disableClamp() {
+    this.config.CLAMP = false;
     return this;
   }
 
@@ -287,17 +292,13 @@ export class CandlestickChart extends Chart {
       .join("path")
       .attr("d", ([, I]) => line(I));
 
-    const l = Math.ceil(path.node().getTotalLength());
-    const dash = config.pattern
-      ? animatedDashArray(config.pattern, l)
-      : `${l} ${l}`;
-    path.attr("stroke-dashoffset", l).attr("stroke-dasharray", dash);
     this.lineElements[name] = path;
   }
 
   updateLine(name, x, y) {
     const path = this.lineElements[name];
     const config = this.lines[name];
+    const p = config.pattern || [];
 
     const line = d3
       .line()
@@ -306,18 +307,21 @@ export class CandlestickChart extends Chart {
       .x((d) => x(d.x) + x.step() / 2)
       .y((d) => y(d[name]));
 
-    const animation = path
-      .transition()
-      .duration(this.config.DURATION_MS)
-      .attr("stroke-dashoffset", 0)
-      .attr("d", ([, I]) => line(I));
+    // If a path was previously updated, remove the offset and set its pattern
+    if (this.opened) {
+      path
+        .attr("stroke-dasharray", p.length ? p.join(" ") : null)
+        .attr("stroke-dashoffset", 0); // NOTE should already be 0, but just in case
+    }
 
-    if (!this.resetStroke) {
-      animation.end().finally(() => {
-        const pattern = config.pattern ? config.pattern.join(" ") : "0";
-        path.attr("stroke-dasharray", pattern);
-        this.resetStroke = true;
-      });
+    const transition = path.transition().duration(this.config.DURATION_MS);
+    transition.attr("d", ([, I]) => line(I));
+
+    // If a path hasn't been previously updated, add its opening animation
+    if (!this.opened) {
+      const l = Math.ceil(path.node().getTotalLength());
+      path.attr("stroke-dasharray", animatedDashArray(config.pattern, l));
+      transition.attrTween("stroke-dashoffset", () => animatedDashOffset(p, l));
     }
   }
 
@@ -343,7 +347,7 @@ export class CandlestickChart extends Chart {
       .scaleLinear()
       .domain([0, maxVolume])
       .range([volumeHeight, 0])
-      .clamp(true)
+      .clamp(this.config.CLAMP)
       .nice();
 
     // Right pad the volume ticks
@@ -367,9 +371,13 @@ export class CandlestickChart extends Chart {
       .scaleLinear()
       .domain(domainY)
       .range(rangeY)
-      .clamp(true);
+      .clamp(this.config.CLAMP);
 
-    this.scaleLog = d3.scaleLog().domain(domainY).range(rangeY).clamp(true);
+    this.scaleLog = d3
+      .scaleLog()
+      .domain(domainY)
+      .range(rangeY)
+      .clamp(this.config.CLAMP);
 
     // Get the max tick label width for the y-axis on both linear and log scales
     const [logWidth, logHeight] = maxLabelSize(

@@ -181,6 +181,7 @@ const ohlcv = charts.OHLCV(data, parse)
   .hideVolumeAxis()
   .staggerOpening()
   .doNotRescaleY()
+  .disableClamp()
   // .addLineBelow("ma50");
   .addLineAbove("ma50", "currentColor", [4, 6])
   .addLineAbove("c", "currentColor");

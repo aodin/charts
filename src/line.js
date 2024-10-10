@@ -3,7 +3,7 @@ Line chart
 */
 import * as d3 from "d3";
 
-import { animatedDashArray } from "./animation";
+import { animatedDashArray, animatedDashOffset } from "./animation";
 import { CategoricalChart } from "./chart";
 import { layoutSVG } from "./layout";
 import { parse3dArray, parseTimeSeries3dArray } from "./parsers";
@@ -73,18 +73,28 @@ export class LineChart extends CategoricalChart {
     return d3.scaleOrdinal().domain(this.Z).range(this.config.COLORS);
   }
 
+  /* Chained config methods */
   setPattern(z, pattern) {
     // Set the dash array pattern for a z item
     this.patterns[z] = pattern;
     return this;
   }
 
-  /* Chained config methods */
   hideIfEmpty() {
     this.config.HIDE_EMPTY_CHART = true;
     return this;
   }
   /* End chained config methods */
+
+  getPattern(z) {
+    // Returns an array of the z item pattern, with unset patterns as an empty array
+    return this.patterns[z] || [];
+  }
+
+  getDashArrayAttr(z) {
+    // Return the z item pattern as a string or null
+    return this.getPattern(z).length ? this.getPattern(z).join(" ") : null;
+  }
 
   get legend() {
     // Return the z items along with their colors
@@ -317,24 +327,14 @@ export class LineChart extends CategoricalChart {
       .attr("class", ([z]) => className(z))
       .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
 
-    const lengths = d3.map(this.paths, (elem) => getLength(elem));
-
-    this.paths
-      .attr("stroke-dasharray", (d, i) =>
-        this.getStrokeDasharray(d, i, lengths),
-      )
-      .attr("stroke-dashoffset", (d, i) =>
-        this.getStrokeDashOffset(d, i, lengths),
-      );
-
     this.update(this.x, this.y);
   }
 
-  getStrokeDasharray(d, i, lengths, previousUpdate) {
+  getDashArray(z, i, lengths, previousUpdate) {
     // By default, the dasharray performs an opening animation
-    if (d[0] in this.patterns) {
+    if (z in this.patterns) {
       // Custom patterns can be specified with setPattern()
-      const p = this.patterns[d[0]];
+      const p = this.patterns[z];
       if (previousUpdate) return p.join(" ");
       return lengths[i] ? animatedDashArray(p, lengths[i]) : null;
     }
@@ -342,9 +342,9 @@ export class LineChart extends CategoricalChart {
     return lengths[i] ? `${lengths[i]} ${lengths[i]}` : null;
   }
 
-  getStrokeDashOffset(d, i, lengths) {
+  getDashOffset(z, i, lengths) {
     // TODO Option to reverse opening? Set to -length?
-    return lengths[i] || 0;
+    return animatedDashOffset(this.patterns[z], lengths[i]);
   }
 
   update(x, y) {
@@ -388,17 +388,29 @@ export class LineChart extends CategoricalChart {
       .x((d) => x(d.x))
       .y((d) => y(d.y));
 
-    this.paths
+    // If paths were previously updated, remove the offset and set simple patterns
+    if (this.previousUpdate) {
+      this.paths
+        .attr("stroke-dasharray", ([z]) => this.getDashArrayAttr(z))
+        .attr("stroke-dashoffset", null);
+    }
+
+    const transition = this.paths
       .transition()
       .duration(this.config.DURATION_MS)
       .attr("d", ([, I]) => line(I))
-      .attr("stroke-dashoffset", 0)
       .attr("opacity", ([z]) => (this.hidden.has(z) ? 0 : 1.0));
 
-    if (this.previousUpdate) {
-      // TODO How to support both an animation and custom styles needs more thought
-      this.paths.attr("stroke-dasharray", (d, i) =>
-        this.getStrokeDasharray(d, i, [], this.previousUpdate),
+    if (!this.previousUpdate) {
+      // Initial opening animation
+      const lengths = d3.map(this.paths, (elem) => getLength(elem));
+
+      this.paths.attr("stroke-dasharray", ([z], i) =>
+        this.getDashArray(z, i, lengths),
+      );
+
+      transition.attrTween("stroke-dashoffset", ([z], i) =>
+        this.getDashOffset(z, i, lengths),
       );
     }
     this.previousUpdate = true;
