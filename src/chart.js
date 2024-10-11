@@ -48,6 +48,8 @@ export class Chart {
   }
 
   noAnimation() {
+    // Set both transition and overlay to 0
+    this.config.DELAY_MS = 0;
     return this.animationDuration(0);
   }
 
