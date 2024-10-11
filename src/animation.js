@@ -39,3 +39,7 @@ export function animatedDashOffset(pattern, totalLength) {
   }
   return d3.interpolate(totalLength, 0);
 }
+
+export function updatePattern(pattern, ratio) {
+  return d3.map(pattern, (d) => d * ratio);
+}
