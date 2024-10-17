@@ -332,9 +332,9 @@ export class LineChart extends CategoricalChart {
 
   getDashArray(z, i, lengths, previousUpdate) {
     // By default, the dasharray performs an opening animation
-    if (z in this.patterns) {
-      // Custom patterns can be specified with setPattern()
-      const p = this.patterns[z];
+    // Custom patterns can be specified with setPattern() or overriding getPattern()
+    const p = this.getPattern(z);
+    if (p && p.length) {
       if (previousUpdate) return p.join(" ");
       return lengths[i] ? animatedDashArray(p, lengths[i]) : null;
     }
@@ -344,7 +344,7 @@ export class LineChart extends CategoricalChart {
 
   getDashOffset(z, i, lengths) {
     // TODO Option to reverse opening? Set to -length?
-    return animatedDashOffset(this.patterns[z], lengths[i]);
+    return animatedDashOffset(this.getPattern(z), lengths[i]);
   }
 
   update(x, y) {
