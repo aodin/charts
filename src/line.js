@@ -448,6 +448,9 @@ export class LineChart extends CategoricalChart {
           ? this.config.HIGHLIGHT_STROKE_WIDTH
           : this.config.STROKE_WIDTH,
       );
+
+    // Raise the currently selected path so other lines are rendered underneath it
+    this.paths.filter(([elem]) => elem === z).raise();
   }
 
   onEvent(move, leave) {
