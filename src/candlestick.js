@@ -65,7 +65,7 @@ export class CandlestickChart extends Chart {
       HIDE_VOLUME_AXIS: false,
       VOLUME_TICK_COUNT: 1,
       RESCALE_Y: true,
-      CLAMP: true, // Axes clamps are enabled by default
+      CLAMP: false, // Axes clamps are disabled by default
       LAYOUT: {},
 
       // For rendered lines
@@ -155,6 +155,11 @@ export class CandlestickChart extends Chart {
     return this;
   }
 
+  enableClamp() {
+    this.config.CLAMP = true;
+    return this;
+  }
+
   disableClamp() {
     this.config.CLAMP = false;
     return this;
@@ -222,8 +227,8 @@ export class CandlestickChart extends Chart {
   }
 
   get wickThickness() {
-    // Wick thickness should at least one pixel, but no greater than 1% of the band
-    return d3.max([this.scaleX.bandwidth() * 0.01, 1.0]);
+    // Wick thickness should at least 1px, but no greater than 3% of the band or 10px
+    return d3.min([d3.max([this.scaleX.bandwidth() * 0.03, 1.0]), 10]);
   }
 
   makeDateFormatter() {
@@ -259,12 +264,33 @@ export class CandlestickChart extends Chart {
     return this;
   }
 
+  // Line methods - all methods return the line's path D3 element
+  getLine(name) {
+    return this.lineElements[name];
+  }
+
+  setLineOpacity(name, opacity = 1.0) {
+    return this.getLine(name).attr("opacity", opacity);
+  }
+
   showLine(name) {
-    this.lineElements[name].attr("opacity", 1.0);
+    return this.setLineOpacity(name, 1.0);
   }
 
   hideLine(name) {
-    this.lineElements[name].attr("opacity", 0);
+    return this.setLineOpacity(name, 0);
+  }
+
+  moveLineBelow(name) {
+    const path = this.getLine(name);
+    this.lineBelow.append(() => path.node().parentNode);
+    return path;
+  }
+
+  moveLineAbove(name) {
+    const path = this.getLine(name);
+    this.lineAbove.append(() => path.node().parentNode);
+    return path;
   }
 
   renderLine(name, x, y) {
@@ -293,10 +319,11 @@ export class CandlestickChart extends Chart {
       .attr("d", ([, I]) => line(I));
 
     this.lineElements[name] = path;
+    return path;
   }
 
   updateLine(name, x, y) {
-    const path = this.lineElements[name];
+    const path = this.getLine(name);
     const config = this.lines[name];
     const p = config.pattern || [];
 
@@ -323,6 +350,7 @@ export class CandlestickChart extends Chart {
       path.attr("stroke-dasharray", animatedDashArray(config.pattern, l));
       transition.attrTween("stroke-dashoffset", () => animatedDashOffset(p, l));
     }
+    return path;
   }
 
   render(selector) {
@@ -792,14 +820,14 @@ export class CandlestickChart extends Chart {
       }
 
       if (move) {
-        move.call(this, data);
+        move.call(this, data, evt);
       }
     };
 
     const pointerleave = (evt) => {
       prevIndex = null;
       if (leave) {
-        leave.call(this);
+        leave.call(this, evt);
       }
     };
 

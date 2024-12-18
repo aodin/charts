@@ -112,6 +112,8 @@ body {
           <button id="reset">Reset</button>
           <button id="ma50">Hide ma(50)</button>
           <button id="ma50x">Show ma(50)</button>
+          <button id="move">Lower ma(50)</button>
+          <button id="raise">Raise ma(50)</button>
         </div>
       </div>
       <div id="hud"></div>
@@ -184,14 +186,24 @@ const ohlcv = charts.OHLCV(data, parse)
   .disableClamp()
   // .noAnimation()
   // .addLineBelow("ma50");
-  .addLineAbove("ma50", "currentColor", [4, 6])
+  .addLineAbove("ma50", "#00AAFF")
   .addLineAbove("c", "currentColor");
 
 ohlcv.render("#chart");
 
+function move() {
+  ohlcv.moveLineBelow("ma50").attr("opacity", 0.3);
+}
+
+function raise() {
+  ohlcv.moveLineAbove("ma50").attr("stroke-width", 4).attr("opacity", 1.0).raise();
+}
+
 document.getElementById("log").addEventListener("click", ohlcv.useLog.bind(ohlcv));
 document.getElementById("linear").addEventListener("click", ohlcv.useLinear.bind(ohlcv));
 document.getElementById("reset").addEventListener("click", ohlcv.reset.bind(ohlcv));
+document.getElementById("move").addEventListener("click", move);
+document.getElementById("raise").addEventListener("click", raise);
 
 const hud = document.querySelector("#hud");
 
