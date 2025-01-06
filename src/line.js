@@ -239,9 +239,10 @@ export class LineChart extends CategoricalChart {
       .append("defs")
       .append("clipPath")
       .attr("id", clipPathID)
+      .attr("clipPathUnits", "objectBoundingBox")
       .append("rect")
-      .attr("width", this.layout.width)
-      .attr("height", this.layout.height);
+      .attr("width", "1")
+      .attr("height", "1");
 
     this.svg.attr("clip-path", `url(#${clipPathID})`);
 
