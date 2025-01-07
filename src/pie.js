@@ -37,6 +37,7 @@ export class PieChart extends CategoricalChart {
       INITIAL_CLOSED: false,
       SKIP_ENTER_ANIMATION: false,
       COLORS: d3.schemeCategory10,
+      OVERFLOW: false, // Allow overflow of the SVG element
     };
 
     this.data = d3.map(data, parser);
@@ -113,7 +114,11 @@ export class PieChart extends CategoricalChart {
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
+    [this.svg, this.layout] = layoutSVG(
+      selector,
+      this.config.LAYOUT,
+      this.config.OVERFLOW,
+    );
 
     // By default, show the latest quarter of data
     // TODO Option to change default - or just use update()?

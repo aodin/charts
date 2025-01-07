@@ -67,6 +67,7 @@ export class CandlestickChart extends Chart {
       RESCALE_Y: true,
       CLAMP: false, // Axes clamps are disabled by default
       LAYOUT: {},
+      OVERFLOW: false, // Allow overflow of the SVG element
 
       // For rendered lines
       STROKE_WIDTH: 1.5,
@@ -363,7 +364,11 @@ export class CandlestickChart extends Chart {
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
+    [this.svg, this.layout] = layoutSVG(
+      selector,
+      this.config.LAYOUT,
+      this.config.OVERFLOW,
+    );
 
     // The price and volume portions of the chart will share an x-axis
     const volumeHeight = this.layout.innerHeight * this.config.VOLUME_RATIO;

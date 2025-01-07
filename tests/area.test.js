@@ -15,7 +15,7 @@ describe("Area", () => {
   });
 
   it("should be rendered on the DOM", () => {
-    const area = Area(monthly, parseTimeSeries3dArray);
+    const area = Area(monthly, parseTimeSeries3dArray).overflowVisible();
     area.render("#chart");
   });
 

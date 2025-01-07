@@ -53,6 +53,11 @@ export class Chart {
     return this.animationDuration(0);
   }
 
+  overflowVisible() {
+    this.config.OVERFLOW = true;
+    return this;
+  }
+
   node() {
     // Return the chart svg node. Return null if the chart hasn't been rendered.
     return this.svg ? this.svg.node() : null;

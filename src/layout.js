@@ -118,18 +118,21 @@ export function maxTickWidth(defaults, height, domain, format, options) {
   return width + options.X_TICK_GUTTER + 5;
 }
 
-export function appendSVG(selector, width, height) {
+export function appendSVG(selector, width, height, overflow = false) {
   // Append an SVG element to the selected element
-  return d3
-    .select(selector)
-    .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("style", "max-width: 100%; height: intrinsic;")
-    .style("-webkit-tap-highlight-color", "transparent")
-    .style("overflow", "visible");
+  return (
+    d3
+      .select(selector)
+      .append("svg")
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("style", "max-width: 100%; height: intrinsic;")
+      .style("-webkit-tap-highlight-color", "transparent")
+      // For some charts, it might make sense to have the style overflow: visible
+      .style("overflow", overflow ? "visible" : "hidden")
+  );
 }
 
-export function layoutSVG(selector, options) {
+export function layoutSVG(selector, options, overflow = false) {
   // Return the SVG elements and its layout
   // Available options:
   // * screenHeightPercent
@@ -157,6 +160,6 @@ export function layoutSVG(selector, options) {
   }
 
   const layout = getLayout(selector, options);
-  const svg = appendSVG(selector, layout.width, layout.height);
+  const svg = appendSVG(selector, layout.width, layout.height, overflow);
   return [svg, layout];
 }

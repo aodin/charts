@@ -33,6 +33,7 @@ export class AreaChart extends CategoricalChart {
       BACKGROUND_OPACITY: 0.3, // Opacity when another line is highlighted
       Y_AXIS_RIGHT: false,
       COLORS: d3.schemeCategory10,
+      OVERFLOW: false, // Allow overflow of the SVG element
 
       // Additional margins
       MARGIN_TICK: 3,
@@ -201,13 +202,14 @@ export class AreaChart extends CategoricalChart {
     // If there is no data, do not render
     if (!this.data.length) return;
 
-    // Set a new clip path ID whenever the chart is rendered
-    const clipPathID = `area-clip-path-${uniqueID++}`;
-
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
+    [this.svg, this.layout] = layoutSVG(
+      selector,
+      this.config.LAYOUT,
+      this.config.OVERFLOW,
+    );
 
     // Create fake axes to measure label sizes and update layout
     this.updateLayout();
@@ -217,17 +219,6 @@ export class AreaChart extends CategoricalChart {
 
     // Start with the SVG visible - this can be set to 0 for "fade in"
     this.svg.attr("opacity", 1.0);
-
-    // Create a clip path to hide any overflow content
-    this.svg
-      .append("defs")
-      .append("clipPath")
-      .attr("id", clipPathID)
-      .append("rect")
-      .attr("width", this.layout.width)
-      .attr("height", this.layout.height);
-
-    this.svg.attr("clip-path", `url(#${clipPathID})`);
 
     // First items drawn are lower layers
     this.gGrid = this.svg

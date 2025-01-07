@@ -35,6 +35,7 @@ export class LineChartWithZoom extends CategoricalChart {
       DOT_RADIUS: 3.0, // Radius of the dot
       ZOOM_EXTENT: [0.5, 32],
       COLORS: d3.schemeCategory10,
+      OVERFLOW: false, // Allow overflow of the SVG element
 
       // Additional margins
       MARGIN_TICK: 3,
@@ -165,30 +166,20 @@ export class LineChartWithZoom extends CategoricalChart {
     // If there is no data, do not render
     if (!this.data.length) return;
 
-    // Set a new clip path ID whenever the chart is rendered
-    const clipPathID = `zoom-clip-path-${uniqueID++}`;
-
     // The selector can either be for an:
     // 1. SVG element with width and height attributes
     // 2. HTML element that has an intrinsic width - an SVG element will be created
-    [this.svg, this.layout] = layoutSVG(selector, this.config.LAYOUT);
+    [this.svg, this.layout] = layoutSVG(
+      selector,
+      this.config.LAYOUT,
+      this.config.OVERFLOW,
+    );
 
     // Create fake axes to measure label sizes and update layout
     this.updateLayout();
 
     const x = this.xScale;
     const y = this.yScale;
-
-    // Create a clip path for the inner data element to hide any overflow content
-    this.svg
-      .append("defs")
-      .append("clipPath")
-      .attr("id", clipPathID)
-      .append("rect")
-      .attr("width", this.layout.width)
-      .attr("height", this.layout.height);
-
-    this.svg.attr("clip-path", `url(#${clipPathID})`);
 
     this.gGrid = this.svg
       .append("g")
